@@ -2,13 +2,19 @@
 import sys
 
 from assignemnt_2.baseline_trainer import BaselineTrainer
+from assignemnt_2.hmm import HMM
 
 if __name__ == '__main__':
-    model = sys.argv[1]
+    mode_name = sys.argv[1]
     test_file = sys.argv[2]
-    param_file = sys.argv[3]
+    lex_file = sys.argv[3]
+    gram_file = sys.argv[4]
 
-    if model == 'baseline':
-        baseline = BaselineTrainer()
-        baseline.load(param_file)
-        baseline.decode(test_file)
+    if mode_name == 'baseline':
+        model = BaselineTrainer()
+        model.load(param_file)
+        model.decode(test_file)
+
+    if mode_name == 'hmm':
+        model = HMM()
+        model.decode(test_file, lex_file, gram_file)
