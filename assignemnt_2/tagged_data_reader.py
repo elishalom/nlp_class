@@ -11,5 +11,5 @@ class TaggedDataLoader(object):
     def load(self, file_name: str) -> pd.DataFrame:
         with open(file_name, 'rt') as f:
             normalized_rows = self._normalizer.normalize(f)
-            df = pd.DataFrame(normalized_rows, columns=['document_id', 'position', 'segment', 'type'])
+            df = pd.DataFrame(normalized_rows, columns=['document_id', 'position', 'segment', 'tag'])
         return df
