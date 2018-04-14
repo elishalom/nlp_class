@@ -1,45 +1,41 @@
 import csv
-from os.path import splitext
-
-import pandas as pd
+from collections import defaultdict, Counter
+from itertools import chain
+from os.path import splitext, basename
 
 from assignemnt_2.documents_reader import DocumentsReader
 from assignemnt_2.model_base import ModelBase
 
 
 class BaselineTrainer(ModelBase):
-    def __init__(self) -> None:
+    def __init__(self, tags_file: str = None) -> None:
         super().__init__()
-        self._occurrences_per_tag = None
+        if tags_file is None:
+            self._segment_to_tag = None
+        else:
+            with open(tags_file, 'rt') as f:
+                reader = csv.reader(f, delimiter='\t')
+                self._segment_to_tag = dict(reader)
 
     def train(self, train_file: str):
-        reader = DocumentsReader(train_file)
+        reader = DocumentsReader.read(train_file)
+        segment_to_tag_counts = defaultdict(Counter)
+        for segment, tag in chain.from_iterable(reader):
+            segment_to_tag_counts[segment][tag] += 1
 
-        occurrences_per_tag = train_corpus.groupby(['segment', 'tag']).size().to_frame('occurrences')
-        max_tag = occurrences_per_tag.groupby('segment')['occurrences'].max().to_frame('max_occurrences')
-        occurrences_per_tag = occurrences_per_tag.join(max_tag)
-        occurrences_per_tag = occurrences_per_tag.loc[occurrences_per_tag['occurrences'] == occurrences_per_tag['max_occurrences']]
-        occurrences_per_tag = occurrences_per_tag.loc[~occurrences_per_tag.index.duplicated()]
-        occurrences_per_tag = occurrences_per_tag[[]].reset_index('tag')
-        self._occurrences_per_tag = occurrences_per_tag
+        segment_to_tag = {segment: max(counts.keys(), key=counts.get) for segment, counts in
+                          segment_to_tag_counts.items()}
 
-    def persist(self, target_file: str) -> None:
-        self._occurrences_per_tag.to_csv(target_file, sep='\t')
-
-    def load(self, tags_file: str) -> None:
-        self._occurrences_per_tag = pd.read_csv(tags_file, sep='\t', index_col='segment', na_filter=None)
+        with open('segment_to_tag.tsv', 'wt') as f:
+            writer = csv.writer(f, delimiter='\t')
+            writer.writerows(sorted(segment_to_tag.items()))
 
     def decode(self, test_file):
-        tags = self._occurrences_per_tag['tag'].to_dict()
-
-        with open(test_file, 'rt') as sf, open(splitext(test_file)[0] + '.tagged', 'wt') as tf:
+        with open(test_file, 'rt') as sf, open(splitext(basename(test_file))[0] + '.tagged', 'wt') as tf:
             writer = csv.writer(tf, delimiter='\t')
             for segment in sf:
                 segment = segment.strip()
                 if segment == '':
                     writer.writerow([])
                 else:
-                    writer.writerow([segment, tags.get(segment, 'NNP')])
-
-
-
+                    writer.writerow([segment, self._segment_to_tag.get(segment, 'NNP')])

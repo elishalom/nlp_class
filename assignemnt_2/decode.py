@@ -11,8 +11,7 @@ if __name__ == '__main__':
     gram_file = sys.argv[4]
 
     if mode_name == 'baseline':
-        model = BaselineTrainer()
-        model.load(param_file)
+        model = BaselineTrainer('segment_to_tag.tsv')
         model.decode(test_file)
 
     if mode_name == 'hmm':
