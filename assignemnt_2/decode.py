@@ -11,4 +11,4 @@ if __name__ == '__main__':
     if model == 'baseline':
         baseline = BaselineTrainer()
         baseline.load(param_file)
-        baseline.tag(test_file)
+        baseline.decode(test_file)
