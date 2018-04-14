@@ -11,6 +11,6 @@ if __name__ == '__main__':
     smoothing = sys.argv[4]
 
     if model == 'baseline':
-        BaselineTrainer().evaluate(tagged_file, gold_file)
+        BaselineTrainer().evaluate(model, tagged_file, gold_file, smoothing)
     else:
-        HMM().evaluate(tagged_file, gold_file)
+        HMM().evaluate(model, tagged_file, gold_file, smoothing)
