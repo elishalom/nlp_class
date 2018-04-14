@@ -1,14 +1,13 @@
 from os.path import join, dirname
 
-from assignemnt_2.tagged_data_reader import TaggedDataLoader
+from assignemnt_2.default_tagged_data_load import DefaultTaggedDataLoader
 from assignemnt_2.tagged_corpus_stats_generator import TaggedCorpusStatsGenerator
-from assignemnt_2.tagged_data_normalizer import TaggedDataNormalizer
 
 
 class CorpusStatsGenerator(object):
     @staticmethod
     def generate(source_file):
-        df = TaggedDataLoader(TaggedDataNormalizer()).load(source_file)
+        df = DefaultTaggedDataLoader.load(source_file)
         print(TaggedCorpusStatsGenerator().generate(df))
 
 
