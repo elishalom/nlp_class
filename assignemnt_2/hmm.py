@@ -17,12 +17,12 @@ class HMM(ModelBase):
         super().__init__()
         self.order = order
 
-    def train(self, train_file: str):
+    def train(self, train_file: str, smoothing: bool) -> None:
         lex_file = splitext(basename(train_file))[0] + '.lex'
         gram_file = splitext(basename(train_file))[0] + '.gram'
 
-        em_probs = defaultdict(lambda : defaultdict(float))
-        trans_probs = defaultdict(lambda : defaultdict(float))
+        em_probs = defaultdict(lambda: defaultdict(float))
+        trans_probs = defaultdict(lambda: defaultdict(float))
 
         seg_pos_tuple_list = DocumentsReader.read(train_file)
 
@@ -40,7 +40,8 @@ class HMM(ModelBase):
                 last_pos = pos
 
         pos_counts = sum(pos_prob.values())
-        pos_prob = {k: log(v / pos_counts) for k, v in pos_prob.items()}
+        delta_pos = 1 if smoothing else 0
+        pos_prob = {k: log((v + delta_pos) / (pos_counts + delta_pos * pos_counts)) for k, v in pos_prob.items()}
 
         for pos in trans_probs.keys():
             adjacent_pos_counts = sum(trans_probs[pos].values())
@@ -71,15 +72,15 @@ class HMM(ModelBase):
                     writer.writerow([log_proba, pos, adjacent_pos])
 
     def decode(self, test_file, lex_file, grams_file):
-        segments_probabilities = defaultdict(dict)
+        emition_probabilities = defaultdict(dict)
         with open(lex_file, 'r') as f:
             reader = csv.reader(f, delimiter='\t')
             for row in reader:
                 segment = row[0]
                 for pos, prob in zip(row[1::2], row[2::2]):
-                    segments_probabilities[segment][pos] = float(prob)
+                    emition_probabilities[segment][pos] = float(prob)
 
-        all_possible_pos = list(set(itertools.chain.from_iterable(segments_probabilities.values())))
+        all_possible_pos = list(set(itertools.chain.from_iterable(emition_probabilities.values())))
 
         gram_order = 2
         transition_probabilities = {}
@@ -98,12 +99,13 @@ class HMM(ModelBase):
                 first_segment = sentence[0][0]
                 for i, pos in enumerate(all_possible_pos):
                     mat[i][0] = (math.e ** transition_probabilities[(recent_pos, pos)]) if (recent_pos, pos) in transition_probabilities else 0
-                    mat[i][0] += (math.e ** segments_probabilities[first_segment][pos]) if first_segment in segments_probabilities and pos in segments_probabilities[first_segment] else 0
+                    mat[i][0] += (math.e ** emition_probabilities[first_segment][pos]) if first_segment in emition_probabilities and pos in emition_probabilities[first_segment] else 0
                     mat[i][0] = math.log(mat[i][0]) if mat[i][0] > 0 else float('-inf')
+
                 for j in range(1, len(sentence)):
                     segment = sentence[j][0]
                     for i, pos in enumerate(all_possible_pos):
-                        mat[i][j] = (math.e ** segments_probabilities[segment][pos]) if first_segment in segments_probabilities and pos in segments_probabilities[segment] else 0
+                        mat[i][j] = (math.e ** emition_probabilities[segment][pos]) if first_segment in emition_probabilities and pos in emition_probabilities[segment] else 0
                         max_transition_probability = float('-inf')
                         for k, prev_pos in enumerate(all_possible_pos):
                             transition_probability = (math.e ** mat[k][j-1]) + (math.e ** transition_probabilities[(prev_pos, pos)]) if (prev_pos, pos) in transition_probabilities else 0
@@ -113,5 +115,8 @@ class HMM(ModelBase):
 
                 pos_positions = [max(range(len(all_possible_pos)), key=lambda i: mat[i][j]) for j in range(len(sentence))]
 
-                writer.writerows([(part[0], all_possible_pos[pos_position]) for part, pos_position in zip(sentence, pos_positions)])
+                segments_tags = [(part[0], all_possible_pos[pos_position]) for part, pos_position in
+                                 zip(sentence, pos_positions)]
+
+                writer.writerows(segments_tags)
                 f.write('\n')

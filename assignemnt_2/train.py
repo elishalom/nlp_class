@@ -8,6 +8,7 @@ from assignemnt_2.hmm import HMM
 if __name__ == '__main__':
     model_name = sys.argv[1]
     train_file = sys.argv[2]
+    smoothing = True if len(sys.argv) > 3 and sys.argv[3] == 'y' else False
 
     if model_name == 'baseline':
         model = BaselineTrainer()
@@ -15,4 +16,4 @@ if __name__ == '__main__':
 
     if model_name == 'hmm':
         model = HMM()
-        model.train(train_file)
+        model.train(train_file, smoothing)
