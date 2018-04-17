@@ -1,5 +1,7 @@
 import csv
-from typing import Generator, Tuple, List
+from collections import namedtuple
+
+TaggedSegment = namedtuple('TaggedSegment', ['segment', 'pos'])
 
 
 class DocumentsReader(object):
@@ -13,4 +15,4 @@ class DocumentsReader(object):
                     yield sentence
                     sentence = []
                 else:
-                    sentence.append(tuple(row))
+                    sentence.append(TaggedSegment(*(row + [None])[:2]))
