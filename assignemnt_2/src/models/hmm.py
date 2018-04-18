@@ -5,9 +5,7 @@ from glob import glob
 from itertools import takewhile, chain, groupby, product
 from operator import itemgetter
 from os.path import basename, splitext, join
-from typing import Dict, Tuple, List
 
-import matplotlib
 from tqdm import tqdm
 
 from helpers.directories import EXPERIMENTS_DIR
@@ -82,8 +80,6 @@ class HMM(ModelBase):
         with open(join(EXPERIMENTS_DIR, label + '_' + splitext(basename(test_file))[0] + '.tagged'), 'wt') as f:
             writer = csv.writer(f, delimiter='\t')
             for sentence in tqdm(DocumentsReader.read(test_file)):
-                print(sentence)
-
                 segments_tags = self.__predict_tags(sentence, all_possible_pos,
                                                     emission_probabilities,
                                                     transition_probabilities)
@@ -177,7 +173,6 @@ def main():
         plt.semilogy(list(range(10)), list(map(itemgetter(1), rows)), c="b", label="Sentances")
         plt.legend()
         plt.show()
-
 
 
 if __name__ == '__main__':
