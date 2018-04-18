@@ -1,7 +1,7 @@
 # ------------------------
 # Part-of-Speech Tagging Evaluation
 # ------------------------
-# Model: <models.hmm.HMM object at 0x7f16a8050a90>
+# Model: <models.hmm.HMM object at 0x7f3a94d6b208>
 # Smoothing: n
 # Test File: : ../exps/hmm_2_with_smoothing_heb-pos.tagged
 # Gold File: : ../exps/heb-pos.gold

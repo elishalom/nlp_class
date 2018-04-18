@@ -1,10 +1,13 @@
 import csv
 import math
 from collections import defaultdict, Counter
+from glob import glob
 from itertools import takewhile, chain, groupby, product
+from operator import itemgetter
 from os.path import basename, splitext, join
 from typing import Dict, Tuple, List
 
+import matplotlib
 from tqdm import tqdm
 
 from helpers.directories import EXPERIMENTS_DIR
@@ -79,6 +82,8 @@ class HMM(ModelBase):
         with open(join(EXPERIMENTS_DIR, label + '_' + splitext(basename(test_file))[0] + '.tagged'), 'wt') as f:
             writer = csv.writer(f, delimiter='\t')
             for sentence in tqdm(DocumentsReader.read(test_file)):
+                print(sentence)
+
                 segments_tags = self.__predict_tags(sentence, all_possible_pos,
                                                     emission_probabilities,
                                                     transition_probabilities)
@@ -138,3 +143,42 @@ class HMM(ModelBase):
                 for pos, prob in zip(row[1::2], row[2::2]):
                     emission_probabilities[segment][pos] = float(prob)
         return emission_probabilities
+
+
+def main():
+    if False:
+        full_train = list(DocumentsReader().read('/home/yochay/PycharmProjects/nlp_class/assignemnt_2/exps/heb-pos.train'))
+        num_of = len(full_train)
+        for i in range(10):
+            partial_train = full_train[:int(math.ceil(num_of / 10 * (i + 1)))]
+            with open('/home/yochay/PycharmProjects/nlp_class/assignemnt_2/partial_trains/heb-pos-{}.train'.format(i), 'wt') as f:
+                writer = csv.writer(f, delimiter='\t')
+                for sentence in partial_train:
+                    writer.writerows(sentence)
+                    f.write('\n')
+
+
+        with open('stats.tsv', 'wt') as tf:
+            writer = csv.writer(tf, delimiter='\t')
+            for fn in sorted(glob('/home/yochay/PycharmProjects/nlp_class/assignemnt_2/partial_trains/*.train')):
+                print(fn)
+                model = HMM(2)
+                model.train(fn, True)
+                model.decode('/home/yochay/PycharmProjects/nlp_class/assignemnt_2/exps/heb-pos.test', '/home/yochay/PycharmProjects/nlp_class/assignemnt_2/exps/hmm_2_with_smoothing.lex', '/home/yochay/PycharmProjects/nlp_class/assignemnt_2/exps/hmm_2_with_smoothing.gram')
+                model.evaluate('HMM', '/home/yochay/PycharmProjects/nlp_class/assignemnt_2/exps/hmm_2_with_smoothing_heb-pos.tagged', '/home/yochay/PycharmProjects/nlp_class/assignemnt_2/exps/heb-pos.gold', True)
+                with open('/home/yochay/PycharmProjects/nlp_class/assignemnt_2/results/hmm_2_with_smoothing_heb-pos.eval') as f:
+                    writer.writerow(f.readlines()[-1].split()[1:])
+                    tf.flush()
+    else:
+        with open('stats.tsv', 'rt') as f:
+            rows = [list(map(float,row)) for row in csv.reader(f, delimiter='\t')]
+        import matplotlib.pyplot as plt
+        plt.semilogy(list(range(10)), list(map(itemgetter(0), rows)), c="g", label="Segments")
+        plt.semilogy(list(range(10)), list(map(itemgetter(1), rows)), c="b", label="Sentances")
+        plt.legend()
+        plt.show()
+
+
+
+if __name__ == '__main__':
+    main()
