@@ -16,7 +16,7 @@ class ModelBase(object, metaclass=ABCMeta):
         pass
 
     @staticmethod
-    def evaluate(model, tagged_file, gold_file, smoothing):
+    def evaluate(tagged_file, gold_file, model, smoothing):
         results_header = """# ------------------------
 # Part-of-Speech Tagging Evaluation
 # ------------------------

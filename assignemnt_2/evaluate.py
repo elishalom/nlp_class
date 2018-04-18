@@ -3,6 +3,7 @@ import sys
 
 from assignemnt_2.baseline_trainer import BaselineTrainer
 from assignemnt_2.hmm import HMM
+from assignemnt_2.model_base import ModelBase
 
 if __name__ == '__main__':
     tagged_file = sys.argv[1]
@@ -10,7 +11,9 @@ if __name__ == '__main__':
     model = sys.argv[3]
     smoothing = sys.argv[4]
 
-    if model == 'baseline':
-        BaselineTrainer().evaluate(model, tagged_file, gold_file, smoothing)
-    else:
-        HMM().evaluate(model, tagged_file, gold_file, smoothing)
+    ModelBase.evaluate(tagged_file,gold_file,model,smoothing)
+
+    #if model == 'baseline':
+    #    BaselineTrainer().evaluate(model, tagged_file, gold_file, smoothing)
+    #else:
+    #    HMM().evaluate(model, tagged_file, gold_file, smoothing)
