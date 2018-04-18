@@ -8,4 +8,4 @@ if __name__ == '__main__':
     test_file = sys.argv[2]
 
     model = ModelLoader().load(model_code)
-    model.decode(test_file)
+    model.decode(test_file, *sys.argv[3:])

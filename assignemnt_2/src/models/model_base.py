@@ -1,6 +1,6 @@
 import csv
 from abc import ABCMeta, abstractmethod
-from os.path import join
+from os.path import join, basename, splitext
 
 from helpers.directories import RESULTS_DIR
 from documents_reading.documents_reader import DocumentsReader
@@ -12,7 +12,7 @@ class ModelBase(object, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def decode(self, test_file):
+    def decode(self, test_file, *args):
         pass
 
     @staticmethod
@@ -29,7 +29,7 @@ class ModelBase(object, metaclass=ABCMeta):
 # sent-num word-accuracy sent-accuracy
 # ------------------------
 """.format(model, smoothing, tagged_file, gold_file)
-        with open(join(RESULTS_DIR, 'results.eval'), 'wt') as f:
+        with open(join(RESULTS_DIR, splitext(basename(tagged_file))[0] + '.eval'), 'wt') as f:
             writer = csv.writer(f, delimiter='\t')
             f.write(results_header)
 

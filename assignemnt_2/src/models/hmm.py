@@ -18,8 +18,6 @@ class HMM(ModelBase):
     def __init__(self, order: int=1) -> None:
         super().__init__()
         self.__order = order
-        self.__lex_file = join(EXPERIMENTS_DIR, 'hmm_{}.lex'.format(order))
-        self.__grams_file = join(EXPERIMENTS_DIR, 'hmm_{}.gram'.format(order))
 
     def train(self, train_file: str, smoothing: bool= True) -> None:
         seg_pos_tuple_list = list(DocumentsReader.read(train_file))
@@ -44,59 +42,41 @@ class HMM(ModelBase):
         sentences_pos = [[pos for _, pos in sentence] for sentence in seg_pos_tuple_list]
         transitions_counts = Counter(chain.from_iterable(zip(['<S>'] + sentence, sentence) for sentence in sentences_pos))
 
-        # transitions_probabilities = self.__to_log_probabilities(transitions_counts, smoothing, set(tags_counts.keys()))
         v = len(tags_counts) * delta
         if smoothing:
             for seg_pos in product(tags_counts.keys(), tags_counts.keys()):
                 seg_pos_counts[seg_pos] += 0
         transitions_probabilities = {(src, dst): math.log((occurrences + delta) / (tags_counts[src] + v)) for (src, dst), occurrences in transitions_counts.items()}
 
-        with open(self.__lex_file, 'w') as f:
+        lex_file = join(EXPERIMENTS_DIR, 'hmm_{}_{}_smoothing.lex'.format(self.__order, 'with' if smoothing else 'without'))
+        grams_file = join(EXPERIMENTS_DIR, 'hmm_{}_{}_smoothing.gram'.format(self.__order, 'with' if smoothing else 'without'))
+        with open(lex_file, 'w') as f:
             writer = csv.writer(f, delimiter='\t')
             for segment, seg_pos_log_proba in groupby(sorted(emission_log_probabilities.items()), key=lambda item: item[0][0]):
                 writer.writerow([segment] + list(chain.from_iterable((pos, log_probability) for (_, pos), log_probability in seg_pos_log_proba)))
                 writer.writerow([UNKNOWN, 'NNP', 0])
 
-        with open(self.__grams_file, 'w') as f:
+        with open(grams_file, 'w') as f:
             f.write('\\data\\\n')
-            f.write('ngram 1 = {}\n'.format(len(emission_log_probabilities)))
+            f.write('ngram 1 = {}\n'.format(num_of_unigrams_instances))
+            f.write('ngram 2 = {}\n'.format(sum(transitions_counts.values())))
             f.write('\n')
             f.write('\\1-grams\\\n')
             writer = csv.writer(f, delimiter='\t')
-            # writer.writerows(map(reversed, pos_prob.items()))
+            writer.writerows(map(reversed, tags_log_probabilities.items()))
             f.write('\n')
             f.write('\\2-grams\\\n')
             for (src_pos, dst_pos), log_proba in transitions_probabilities.items():
                 writer.writerow([log_proba, src_pos, dst_pos])
 
-    @staticmethod
-    def __to_log_probabilities(pairs_count: Dict[Tuple[str, str], int],
-                               smoothing: bool=False,
-                               fillers: List[str]=None):
-        segment_to_pos_occurrences: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
-        for (segment, pos), count in pairs_count.items():
-            segment_to_pos_occurrences[segment][pos] = count
-        if smoothing and fillers:
-            for segment in segment_to_pos_occurrences:
-                for pos in fillers:
-                    segment_to_pos_occurrences[segment][pos] += 1
-
-        segment_occurrences = {segment: sum(pas_to_occurrences.values())
-                               for segment, pas_to_occurrences
-                               in segment_to_pos_occurrences.items()}
-        emission_probabilities = {
-            segment: {pos: math.log(count / segment_occurrences[segment]) for pos, count in pos_to_occurrences.items()} for
-            segment, pos_to_occurrences in
-            segment_to_pos_occurrences.items()}
-        return emission_probabilities
-
-    def decode(self, test_file):
-        emission_probabilities = self.__load_emission_probabilities()
-        transition_probabilities = self.__load_transitions_probabilities()
+    def decode(self, test_file, lex_file, gram_file):
+        emission_probabilities = self.__load_emission_probabilities(lex_file)
+        transition_probabilities = self.__load_transitions_probabilities(gram_file)
 
         all_possible_pos = list(set(k for probabilities in emission_probabilities.values() for k in probabilities))
 
-        with open(join(EXPERIMENTS_DIR, splitext(basename(test_file))[0] + '.tagged'), 'wt') as f:
+        label = splitext(basename(lex_file))[0]
+        with open(join(EXPERIMENTS_DIR, label + '_' + splitext(basename(test_file))[0] + '.tagged'), 'wt') as f:
             writer = csv.writer(f, delimiter='\t')
             for sentence in tqdm(DocumentsReader.read(test_file)):
                 segments_tags = self.__predict_tags(sentence, all_possible_pos,
@@ -133,12 +113,12 @@ class HMM(ModelBase):
 
         return segments_tags
 
-    def __load_transitions_probabilities(self):
+    @staticmethod
+    def __load_transitions_probabilities(gram_file):
         gram_order = 2
 
-        # The fallback value is not expected to be hit if smoothing was used in train
         transition_probabilities = defaultdict(lambda: -float('inf'))
-        with open(self.__grams_file, 'rt') as f:
+        with open(gram_file, 'rt') as f:
             list(takewhile(lambda line: line != '\\{}-grams\\\n'.format(gram_order), f))
 
             reader = csv.reader(f, delimiter='\t')
@@ -147,12 +127,11 @@ class HMM(ModelBase):
                 transition_probabilities[tuple(row[1:])] = float(row[0])
         return transition_probabilities
 
-    def __load_emission_probabilities(self):
-        # This 1/1000 is a fallback value for seg-pos we haven't seen yet.
-        # This needs to be replaced with calculated smoothing.
+    @staticmethod
+    def __load_emission_probabilities(lex_file):
         emission_probabilities = defaultdict(dict)
 
-        with open(self.__lex_file, 'r') as f:
+        with open(lex_file, 'r') as f:
             reader = csv.reader(f, delimiter='\t')
             for row in reader:
                 segment = row[0]

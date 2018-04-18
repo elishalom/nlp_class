@@ -11,7 +11,7 @@ from models.model_base import ModelBase
 class BaselineTrainer(ModelBase):
     def __init__(self) -> None:
         super().__init__()
-        self.__param_files = join(EXPERIMENTS_DIR, 'segment_to_tag.tsv')
+        self.__param_files = join(EXPERIMENTS_DIR, 'baseline_segment_to_tag.tsv')
 
     def train(self, train_file: str, *args):
         reader = DocumentsReader.read(train_file)
@@ -26,12 +26,12 @@ class BaselineTrainer(ModelBase):
             writer = csv.writer(f, delimiter='\t')
             writer.writerows(sorted(segment_to_tag.items()))
 
-    def decode(self, test_file):
+    def decode(self, test_file, *args):
         with open(self.__param_files, 'rt') as f:
             reader = csv.reader(f, delimiter='\t')
             segment_to_tag = dict(reader)
 
-        with open(test_file, 'rt') as sf, open(join(EXPERIMENTS_DIR, splitext(basename(test_file))[0] + '.tagged'), 'wt') as tf:
+        with open(test_file, 'rt') as sf, open(join(EXPERIMENTS_DIR, 'baseline_' + splitext(basename(test_file))[0] + '.tagged'), 'wt') as tf:
             writer = csv.writer(tf, delimiter='\t')
             for segment in sf:
                 segment = segment.strip()
