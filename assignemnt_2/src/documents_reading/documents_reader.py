@@ -1,6 +1,7 @@
 import csv
 from collections import namedtuple
 
+
 TaggedSegment = namedtuple('TaggedSegment', ['segment', 'pos'])
 
 
