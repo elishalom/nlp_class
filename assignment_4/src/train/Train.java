@@ -4,12 +4,14 @@ import grammar.Event;
 import grammar.Grammar;
 import grammar.Rule;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 import tree.Node;
 import tree.Tree;
 import treebank.Treebank;
-import utils.CountMap;
+
 
 
 /**
@@ -60,7 +62,7 @@ public class Train {
 	public List<Rule> getRules(Tree myTree)
 	{
 		List<Rule> theRules = new ArrayList<Rule>();
-
+		
 		List<Node> myNodes = myTree.getNodes();
 		for (int j = 0; j < myNodes.size(); j++) {
 			Node myNode = myNodes.get(j);
@@ -82,30 +84,9 @@ public class Train {
 				if (myNode.isRoot())
 					theRule.setTop(true);
 				theRules.add(theRule);
-			}
+			}	
 		}
 		return theRules;
 	}
-
-	public HashMap<Rule, Float> estimateRuleProbs(Grammar grammar){
-        HashMap<Rule, Float> estimateRuleProbs = new HashMap<>();
-        HashMap<Rule, Integer> countRules = grammar.getRuleCounts();
-
-        int numOfRule = 0;
-        for (Map.Entry<Rule, Integer> entry : countRules.entrySet()){
-            Rule rule = entry.getKey();
-            Float prob = (float) entry.getValue();
-            numOfRule ++;
-            estimateRuleProbs.put(rule, prob);
-        }
-
-        for (Map.Entry<Rule, Float> entry : estimateRuleProbs.entrySet()){
-            Rule rule = entry.getKey();
-            Float prob = entry.getValue();
-            estimateRuleProbs.put(rule, prob/numOfRule);
-        }
-
-        return  estimateRuleProbs;
-	}
-
+	
 }
