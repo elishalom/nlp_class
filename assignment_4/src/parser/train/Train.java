@@ -5,11 +5,11 @@ import grammar.Grammar;
 import grammar.Rule;
 
 import java.util.*;
+import java.util.stream.IntStream;
 
 import tree.Node;
 import tree.Tree;
 import treebank.Treebank;
-import utils.CountMap;
 
 
 /**
@@ -55,14 +55,8 @@ public class Train {
 			myGrammar.addAll(theRules);
 		}
 
-		// ugly - us - debugz
-        HashMap<Rule, Double> est = estimateRuleProbs(myGrammar);
-        for (Map.Entry<Rule, Double> entry : est.entrySet()){
-            Rule rule = entry.getKey();
-            Double prob = (double) entry.getValue();
-            System.out.printf("%s\t%.2f\n",rule.toString(),prob);
-        }
-		// end debugz
+		updateRuleProbs(myGrammar);
+
 		return myGrammar;
 	}
 
@@ -96,25 +90,13 @@ public class Train {
 		return theRules;
 	}
 
-	public HashMap<Rule, Double> estimateRuleProbs(Grammar grammar){
-        HashMap<Rule, Double> estimateRuleProbs = new HashMap<>();
+	public void updateRuleProbs(Grammar grammar){
         HashMap<Rule, Integer> countRules = grammar.getRuleCounts();
 
-        int numOfRule = 0;
-        for (Map.Entry<Rule, Integer> entry : countRules.entrySet()){
-            Rule rule = entry.getKey();
-            Double prob = (double) entry.getValue();
-            numOfRule ++;
-            estimateRuleProbs.put(rule, prob);
-        }
-
-        for (Map.Entry<Rule, Double> entry : estimateRuleProbs.entrySet()){
-            Rule rule = entry.getKey();
-            Double prob = entry.getValue();
-            estimateRuleProbs.put(rule, - Math.log(prob/numOfRule));
-        }
-
-        return  estimateRuleProbs;
+        double occurrences = (double)IntStream.of(countRules.values().stream().mapToInt(v -> v).toArray()).sum();
+		for (Map.Entry<Rule, Integer> ruleCount : countRules.entrySet()) {
+			ruleCount.getKey().setMinusLogProb(- Math.log(ruleCount.getValue()/occurrences));
+		}
 	}
 
 }

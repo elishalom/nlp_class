@@ -3,10 +3,7 @@ package decode;
 import grammar.Grammar;
 import grammar.Rule;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import tree.Node;
 import tree.Terminal;
@@ -33,30 +30,40 @@ public class Decode {
 		}
 		return m_singDecoder;
 	}
-    
-	public Tree decode(List<String> input){
-		
+
+	public Tree decode(List<String> input) {
+
+//		System.out.println(m_mapLexicalRules.keySet());
 		// Done: Baseline Decoder
 		//       Returns a flat tree with NN labels on all leaves 
-		
+
 		Tree t = new Tree(new Node("TOP"));
 		Iterator<String> theInput = input.iterator();
 		while (theInput.hasNext()) {
 			String theWord = (String) theInput.next();
+//            System.out.println(theWord);
+//            System.out.println(m_mapLexicalRules.get(theWord));
 			Node preTerminal = new Node("NN");
 			Terminal terminal = new Terminal(theWord);
 			preTerminal.addDaughter(terminal);
 			t.getRoot().addDaughter(preTerminal);
 		}
-		
+
+//        while (theInput.hasNext()) {
+//            String theWord = (String) theInput.next();
+//            Node preTerminal = new Node("NN");
+//            Terminal terminal = new Terminal(theWord);
+//            preTerminal.addDaughter(terminal);
+//            t.getRoot().addDaughter(preTerminal);
+//        }
+
 		// TODO: CYK decoder
 		//       if CYK fails, 
 		//       use the baseline outcome
 
 
-
 		return t;
-		
+
 	}
 
 	
