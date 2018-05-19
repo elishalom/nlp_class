@@ -54,6 +54,15 @@ public class Train {
 			List<Rule> theRules = getRules(myTree);
 			myGrammar.addAll(theRules);
 		}
+
+		// ugly - us - debugz
+        HashMap<Rule, Double> est = estimateRuleProbs(myGrammar);
+        for (Map.Entry<Rule, Double> entry : est.entrySet()){
+            Rule rule = entry.getKey();
+            Double prob = (double) entry.getValue();
+            System.out.printf("%s\t%.2f\n",rule.toString(),prob);
+        }
+		// end debugz
 		return myGrammar;
 	}
 
@@ -87,22 +96,22 @@ public class Train {
 		return theRules;
 	}
 
-	public HashMap<Rule, Float> estimateRuleProbs(Grammar grammar){
-        HashMap<Rule, Float> estimateRuleProbs = new HashMap<>();
+	public HashMap<Rule, Double> estimateRuleProbs(Grammar grammar){
+        HashMap<Rule, Double> estimateRuleProbs = new HashMap<>();
         HashMap<Rule, Integer> countRules = grammar.getRuleCounts();
 
         int numOfRule = 0;
         for (Map.Entry<Rule, Integer> entry : countRules.entrySet()){
             Rule rule = entry.getKey();
-            Float prob = (float) entry.getValue();
+            Double prob = (double) entry.getValue();
             numOfRule ++;
             estimateRuleProbs.put(rule, prob);
         }
 
-        for (Map.Entry<Rule, Float> entry : estimateRuleProbs.entrySet()){
+        for (Map.Entry<Rule, Double> entry : estimateRuleProbs.entrySet()){
             Rule rule = entry.getKey();
-            Float prob = entry.getValue();
-            estimateRuleProbs.put(rule, prob/numOfRule);
+            Double prob = entry.getValue();
+            estimateRuleProbs.put(rule, - Math.log(prob/numOfRule));
         }
 
         return  estimateRuleProbs;

@@ -48,6 +48,10 @@ public class Treebank {
 		
 		return sb.toString();
 	}
-	
-	
+
+    public void binarize() {
+        for (Tree tree : m_lstAnalyses) {
+            tree.binarize();
+        }
+    }
 }

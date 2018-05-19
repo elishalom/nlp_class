@@ -3,6 +3,7 @@ package tree;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 
@@ -52,7 +53,8 @@ public class Node {
 
 	/**
 	 * C'tors 
-	 * @param s 
+	 * @param s
+	 *
 	 */
 	public Node() {
 		super();
@@ -304,5 +306,40 @@ public class Node {
 	{
 		return getIdentifier();
 	}
-	
+
+	// OURS
+	private void addDaughters(List<Node> daughters){
+		for (Node node: daughters) {
+			addDaughter(node);
+		}
+	}
+
+	// SO OURS, INSANE
+	private void removeDaughters(List<Node> daughters){
+		for (Node node: daughters) {
+			removeDaughter(node);
+		}
+	}
+
+	// OURS !!!!
+	public void binarize() {
+		// binarize only non binary bodes
+		if (this.getDaughters().size() > 2) {
+			List<Node> oldDaughters = this.getDaughters();
+			// they little sisters now
+			List<Node> rightSisters = oldDaughters.subList(1, oldDaughters.size()).stream().collect(Collectors.toList());
+			// remove old daughters
+			this.removeDaughters(rightSisters);
+
+			// add new node with right grand-daughters
+			String newName = String.join("@", rightSisters.stream().map(n -> n.getIdentifier()).collect(Collectors.toList()));
+			Node newRightDaughter = new Node(newName);
+			newRightDaughter.addDaughters(rightSisters);
+			addDaughter(newRightDaughter);
+		}
+		for (Node daugter :
+				getDaughters()) {
+			daugter.binarize();
+		}
+	}
 }

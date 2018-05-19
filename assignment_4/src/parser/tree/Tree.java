@@ -74,4 +74,9 @@ public class Tree {
 	private void setRoot(Node n) {
 		m_nodeRoot = n;
 	}
+
+	// OURSS !!!!
+	public void binarize() {
+		this.m_nodeRoot.binarize();
+	}
 }

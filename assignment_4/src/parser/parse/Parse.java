@@ -44,13 +44,15 @@ public class Parse {
 			System.out.println("Usage: Parse <goldset> <trainset> <experiment-identifier-string>");
 			return;
 		}
-		
+
 		// 1. read input
 		Treebank myGoldTreebank = TreebankReader.getInstance().read(true, args[0]);
 		Treebank myTrainTreebank = TreebankReader.getInstance().read(true, args[1]);
 		
 		// 2. transform trees
 		// TODO
+		myGoldTreebank.binarize();
+		myTrainTreebank.binarize();
 		
 		// 3. train
 		Grammar myGrammar = Train.getInstance().train(myTrainTreebank);
@@ -141,10 +143,4 @@ public class Parse {
 			writer.writeLine(sb.toString());
 		}
 	}
-
-	
-
-	
-
-
 }
