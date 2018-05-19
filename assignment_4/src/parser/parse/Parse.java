@@ -41,7 +41,7 @@ public class Parse {
 		
 		if (args.length < 3)
 		{
-			System.out.println("Usage: Parse <goldset> <trainset> <experiment-identifier-string>");
+			System.out.println("Usage: Parse <goldset> <trainset> <experiment-identifier-string> [h-order]");
 			return;
 		}
 
@@ -53,7 +53,15 @@ public class Parse {
 		// TODO
 		myGoldTreebank.binarize();
 		myTrainTreebank.binarize();
-		
+
+		int hOrder = -1;
+		if (args.length > 3) {
+			hOrder = Integer.parseInt(args[3]);
+		}
+
+		myGoldTreebank.markovize_horizontally(hOrder);
+		myTrainTreebank.markovize_horizontally(hOrder);
+
 		// 3. train
 		Grammar myGrammar = Train.getInstance().train(myTrainTreebank);
 		

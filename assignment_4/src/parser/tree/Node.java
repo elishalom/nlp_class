@@ -332,14 +332,50 @@ public class Node {
 			this.removeDaughters(rightSisters);
 
 			// add new node with right grand-daughters
-			String newName = String.join("@", rightSisters.stream().map(n -> n.getIdentifier()).collect(Collectors.toList()));
+			String newName = String.join("|", rightSisters.stream().map(n -> n.getIdentifier()).collect(Collectors.toList()));
 			Node newRightDaughter = new Node(newName);
 			newRightDaughter.addDaughters(rightSisters);
 			addDaughter(newRightDaughter);
 		}
-		for (Node daugter :
-				getDaughters()) {
+		for (Node daugter : getDaughters()) {
 			daugter.binarize();
 		}
 	}
+
+    public void markovize_horizontally(int order) {
+	    // Just in case the tree has not been binarized
+        assert m_lstDaughters.size() <= 2;
+
+        // Decoration is relevant only when there's a right child
+        if (m_lstDaughters.size() == 2) {
+            getDaughters().get(1).markovize_horizontally(order);
+        } else if (isRoot() && m_lstDaughters.size() == 1) {
+            getDaughters().get(0).markovize_horizontally(order);
+        }
+
+        // Avoid decorating leaves and the root node
+        if (!isInternal()) {
+            return;
+        }
+
+        // Get parents
+        ArrayList<Node> parents = new ArrayList<>();
+        Node current = this.getParent();
+        int remainingOrder = order;
+        while (remainingOrder > 0 && current != null && !current.isRoot()) {
+            parents.add(0, current);
+            current = current.getParent();
+            remainingOrder--;
+        }
+
+        if (parents.size() == 0) {
+            return;
+        }
+
+        // Get sisters identifier
+        List<Node> bigSisters = parents.stream().map(p -> p.getDaughters().get(0)).collect(Collectors.toList());
+        String sistersIdentifier = String.join("|", bigSisters.stream().map(s -> s.getIdentifier()).collect(Collectors.toList()));
+        String newIdentifier = String.format("%s/%s", sistersIdentifier, getIdentifier());
+        setIdentifier(newIdentifier);
+    }
 }

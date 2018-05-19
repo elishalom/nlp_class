@@ -54,4 +54,10 @@ public class Treebank {
             tree.binarize();
         }
     }
+
+	public void markovize_horizontally(int order) {
+		for (Tree tree : m_lstAnalyses) {
+			tree.markovize_horizontally(order);
+		}
+	}
 }
