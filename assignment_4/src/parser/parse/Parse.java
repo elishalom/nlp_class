@@ -54,6 +54,7 @@ public class Parse {
 		myGoldTreebank.binarize();
 		myTrainTreebank.binarize();
 
+		// markovization order default to remember all siblings
 		int hOrder = -1;
 		if (args.length > 3) {
 			hOrder = Integer.parseInt(args[3]);

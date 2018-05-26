@@ -342,6 +342,7 @@ public class Node {
 		}
 	}
 
+	// TODO - documentation
     public void markovize_horizontally(int order) {
 	    // Just in case the tree has not been binarized
         assert m_lstDaughters.size() <= 2;

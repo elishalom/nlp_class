@@ -141,6 +141,7 @@ public class Rule {
 	public void setLexical(boolean lexical) {
 		m_bLexical = lexical;
 	}
-	
 
+	// detect unary rules
+	public boolean isUnary() { return (this.m_RHS.getLength() == 1) ;}
 }

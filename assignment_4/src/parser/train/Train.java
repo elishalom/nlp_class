@@ -92,7 +92,7 @@ public class Train {
 
 	public void updateRuleProbs(Grammar grammar){
         HashMap<Rule, Integer> countRules = grammar.getRuleCounts();
-
+		// TODO - fix occurences? (should be seperately counted by lhs of each rule (conditioned)
         double occurrences = (double)IntStream.of(countRules.values().stream().mapToInt(v -> v).toArray()).sum();
 		for (Map.Entry<Rule, Integer> ruleCount : countRules.entrySet()) {
 			ruleCount.getKey().setMinusLogProb(- Math.log(ruleCount.getValue()/occurrences));

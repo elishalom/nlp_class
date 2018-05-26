@@ -75,9 +75,8 @@ public class Event {
 		m_lstSymbols = symbols;
 	}
 
-	
-	
-	
+	// added for Unary rules detection
+	public int getLength(){return this.m_lstSymbols.size() ;}
 	
 }
 

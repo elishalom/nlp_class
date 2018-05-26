@@ -75,7 +75,7 @@ public class Tree {
 		m_nodeRoot = n;
 	}
 
-	// OURSS !!!!
+	// TODO - OURSS !!!!
 	public void binarize() {
 		this.m_nodeRoot.binarize();
 	}
