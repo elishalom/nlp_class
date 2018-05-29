@@ -117,12 +117,13 @@ public class Decode {
 	// TODO - documentation - parsing terminals and building the CYK Charts
 	private void parseTerminals(ArrayList<ArrayList<HashMap<String,Double>>> probChart, ArrayList<ArrayList<HashMap<String,BackPointer>>> bpChart, List<String> input) {
 		int numOfWordsInInput = input.size();
+		int lastRowIndex = numOfWordsInInput - 1 ;
 		List<HashMap<String, Double>> lexedInput = lexicalizeInput(input); // represent the input as list of possible tag-probability hashmaps per word
 		for (int i = 0; i < numOfWordsInInput ; i++){
-			probChart.get(numOfWordsInInput).get(i).putAll(lexedInput.get(i)); // add all symbol-minLogProbs to probchart
+			probChart.get(lastRowIndex).get(i).putAll(lexedInput.get(i)); // add all symbol-minLogProbs to probchart
 			for (String terminalSymbol : lexedInput.get(i).keySet()){
 				BackPointer bp = new BackPointer(new ChartIndex(-1,-1,input.get(i))); // all terminals point to non-existant indices yet hold the original word value
-				bpChart.get(numOfWordsInInput).get(i).put(terminalSymbol,bp);
+				bpChart.get(lastRowIndex).get(i).put(terminalSymbol,bp);
 			}
 
 			// handle unary rules that could derive the terminal symbol
@@ -131,21 +132,21 @@ public class Decode {
 				stop = true; // by default stop the loop (continue only if there was an improvement. not infinite since we add probs and check for minimum
 				// check all unary rules
 				for (String rhs : m_RHSindexedUnaryGrammar.keySet()){
-					Double terminalLogProb = probChart.get(numOfWordsInInput).get(i).get(rhs);
+					Double terminalLogProb = probChart.get(lastRowIndex).get(i).get(rhs);
 					// if the inserted symbol could be derived from an unary rule
 					if (terminalLogProb != null){
 						// for all the unary rules lhs -> rhs
 						for (String lhs : m_RHSindexedUnaryGrammar.get(rhs).keySet()){
-							Double unaryLogProb = probChart.get(numOfWordsInInput).get(i).get(lhs);
+							Double unaryLogProb = probChart.get(lastRowIndex).get(i).get(lhs);
 							// if never seen this rule
 							if (unaryLogProb == null){
 								// continue to loop
 								stop = false;
 								// update probaility in the probChart - adding minus log probabilities
-								probChart.get(numOfWordsInInput).get(i).put(lhs,terminalLogProb + m_RHSindexedUnaryGrammar.get(rhs).get(lhs));
+								probChart.get(lastRowIndex).get(i).put(lhs,terminalLogProb + m_RHSindexedUnaryGrammar.get(rhs).get(lhs));
 								// set according bpChart to the previous index (point to the last row, according word index and the symbol value)
-								BackPointer bp = new BackPointer(new ChartIndex(numOfWordsInInput,i,rhs));
-								bpChart.get(numOfWordsInInput).get(i).put(lhs,bp);
+								BackPointer bp = new BackPointer(new ChartIndex(lastRowIndex,i,rhs));
+								bpChart.get(lastRowIndex).get(i).put(lhs,bp);
 							}
 							// else - we have already derived the symbol! we should check if we achieved improvement
 							else{
@@ -156,10 +157,10 @@ public class Decode {
 									// continue the loop
 									stop = false;
 									// update probChart
-									probChart.get(numOfWordsInInput).get(i).put(lhs,newProb);
+									probChart.get(lastRowIndex).get(i).put(lhs,newProb);
 									// update backpointers entry
-									BackPointer newBP = new BackPointer(new ChartIndex(numOfWordsInInput,i,rhs));
-									bpChart.get(numOfWordsInInput).get(i).put(lhs,newBP);
+									BackPointer newBP = new BackPointer(new ChartIndex(lastRowIndex,i,rhs));
+									bpChart.get(lastRowIndex).get(i).put(lhs,newBP);
 								}
 							}
 						}
@@ -211,6 +212,7 @@ public class Decode {
 				}
 
 				//handle unary rules
+
 
 
 			} // end iterating over columns
