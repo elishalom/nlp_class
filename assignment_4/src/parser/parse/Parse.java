@@ -46,13 +46,16 @@ public class Parse {
 		}
 
 		// 1. read input
+ 		System.out.println(java.time.LocalTime.now() + "reading input"); // TODO - for debug
+
 		Treebank myGoldTreebank = TreebankReader.getInstance().read(true, args[0]);
 		Treebank myTrainTreebank = TreebankReader.getInstance().read(true, args[1]);
 		
 		// 2. transform trees
-		// TODO
-		myGoldTreebank.binarize();
-		myTrainTreebank.binarize();
+//		myGoldTreebank.binarize();  	// TODO - fix
+//		myTrainTreebank.binarize(); 	// TODO - fix
+
+		System.out.println(java.time.LocalTime.now() + "binarizing input trees"); // TODO - for debug
 
 		// markovization order default to remember all siblings
 		int hOrder = -1;
@@ -60,21 +63,34 @@ public class Parse {
 			hOrder = Integer.parseInt(args[3]);
 		}
 
-		myGoldTreebank.markovize_horizontally(hOrder);
-		myTrainTreebank.markovize_horizontally(hOrder);
+//		myGoldTreebank.markovize_horizontally(hOrder);  	// TODO - fix
+//		myTrainTreebank.markovize_horizontally(hOrder); 	// TODO - fix
+
+		Train.getInstance().binarizeTreeBank(myTrainTreebank,hOrder);
 
 		// 3. train
+
+		System.out.println(java.time.LocalTime.now() + "\ttraining model"); // TODO - for debug
+
 		Grammar myGrammar = Train.getInstance().train(myTrainTreebank);
 		
 		// 4. decode
+
+		System.out.println(java.time.LocalTime.now() + "\tdecoding test set"); // TODO - for debug
+
 		List<Tree> myParseTrees = new ArrayList<Tree>();		
 		for (int i = 0; i < myGoldTreebank.size(); i++) {
 			List<String> mySentence = myGoldTreebank.getAnalyses().get(i).getYield();
 			Tree myParseTree = Decode.getInstance(myGrammar).decode(mySentence);
 			myParseTrees.add(myParseTree);
+
+			System.out.println(java.time.LocalTime.now() + "\t decoded tree " + i + " out of " + myGoldTreebank.size()); // TODO for debug
 		}
 		
 		// 5. de-transform trees
+
+		System.out.println(java.time.LocalTime.now() + "de-binarizing input trees"); // TODO - for debug
+
 		// TODO
 		
 		// 6. write output

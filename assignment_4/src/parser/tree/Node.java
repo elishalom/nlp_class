@@ -379,4 +379,9 @@ public class Node {
         String newIdentifier = String.format("%s/%s", sistersIdentifier, getIdentifier());
         setIdentifier(newIdentifier);
     }
+
+	public void markovize(int hOrder) {
+		// implement horizontal markovization. order -1 means full binarization (q2.2) annotating all siblings
+
+	}
 }

@@ -60,4 +60,10 @@ public class Treebank {
 			tree.markovize_horizontally(order);
 		}
 	}
+
+	public void markovize(int hOrder) {
+		for (Tree tree : m_lstAnalyses){
+			tree.markovize(hOrder);
+		}
+	}
 }

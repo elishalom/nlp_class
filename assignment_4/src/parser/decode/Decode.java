@@ -1,5 +1,6 @@
 package decode;
 
+import com.sun.xml.internal.bind.v2.TODO;
 import grammar.Event;
 import grammar.Grammar;
 import grammar.Rule;
@@ -18,13 +19,14 @@ public class Decode {
 	private static HashMap<Event,Event> m_mapRHS2LHS = null; // maps non-terminal rules by RHS as key and LHS as values
 	private static HashMap<String,HashMap<String, Double>> m_RHSindexedUnaryGrammar;
 	private static HashMap<String,HashMap<String, Double>> m_RHSindexedBinaryGrammar;
+	private static Set<String> m_setStartSymbols;
 
     /**
      * Implementation of a singleton pattern
-     * Avoids redundant instances in memory 
+     * Avoids redundant instances in memory
      */
 	public static Decode m_singDecoder = null;
-	    
+
 	public static Decode getInstance(Grammar g)
 	{
 		if (m_singDecoder == null)
@@ -33,12 +35,17 @@ public class Decode {
 			m_setGrammarRules = g.getSyntacticRules();
 			m_mapLexicalRules = g.getLexicalEntries();
 
+			//add start-symbols
+			m_setStartSymbols = g.getStartSymbols(); //TODO - check if setStartSymbols is called in train
+
 			// add non-terminal index table
+			m_ntIndices = new HashMap<>();
 			Set<String> m_N = g.getNonTerminalSymbols();
 			int i = 0 ;
-			for (String ntSymbol : m_N){ m_ntIndices.put(ntSymbol,i++);}
+			for (String ntSymbol : m_N){m_ntIndices.put(ntSymbol,i++);}
 
 			// add right hand-side to left hand-side hash map
+			m_mapRHS2LHS = new HashMap<>();
 			for (Rule r : m_setGrammarRules){
 				m_mapRHS2LHS.put(r.getRHS(),r.getLHS());
 			}
@@ -57,7 +64,7 @@ public class Decode {
 	public Tree decode(List<String> input) {
 
 		// Done: Baseline Decoder
-		//       Returns a flat tree with NN labels on all leaves 
+		//       Returns a flat tree with NN labels on all leaves
 
 		Tree t = new Tree(new Node("TOP"));
 		Iterator<String> theInput = input.iterator();
@@ -69,23 +76,101 @@ public class Decode {
 			t.getRoot().addDaughter(preTerminal);
 		}
 
-		// TODO: CYK decoder
 		// set probChart as 3d array that holds non-terminal,minusLogProb as values
 		ArrayList<ArrayList<HashMap<String,Double>>> probChart = createPyramidTable(input.size());
+
 		// set backpointers chart for later backtrace and build tree
 		ArrayList<ArrayList<HashMap<String,BackPointer>>> bpChart = createPyramidTable(input.size());
+
 		// build probability and backpointer charts according to CYK algorithm
-		buildCYKCharts(probChart,bpChart,input);
+		System.out.println(java.time.LocalTime.now() + "\t building cyk tables");
+		buildCYKCharts(probChart,bpChart,input); //TODO - recheck the binary rules parse ... may have overlooked the case if the same symbol derived other binary rules !!!! (A->BC after A->XY)
+		System.out.println(java.time.LocalTime.now() + "\t finished building cyk tables");
 
-		ArrayList<BackPointer> possibleBackPointers = getBackPointers(bpChart);
-		BackPointer minBackPointer = getBestParse(possibleBackPointers);
-		Tree bestParse = buildTree(minBackPointer);
+		// get the minimal -logProb back pointer's index (0,0,symbol)
+		Set<String> candidates = m_setStartSymbols;
+		String bestBPSymbol = getMinimumBackPointerIndex(candidates,probChart);
 
+		// build the tree using the backpointers
 		// if CYK fails, use the baseline outcome
-		if (bestParse != null)
-			t = bestParse;
+		if (bestBPSymbol != null){
+			System.out.println(java.time.LocalTime.now() + "\t building best matching tree");
+			t = buildTree(bpChart,bestBPSymbol);
+			System.out.println(java.time.LocalTime.now() + "\t building best matching tree");
+		}
 
 		return t;
+	}
+
+	// TODO - document - build tree from back pointers
+	private Tree buildTree(ArrayList<ArrayList<HashMap<String,BackPointer>>> bpChart, String bpSymbol) {
+		// set the minimal backPointer as root
+		Node root = new Node(bpSymbol);
+		root.setRoot(true);
+		Tree t = new Tree(root);
+
+		// recover 1st backpointer
+		BackPointer nextBP = bpChart.get(0).get(0).get(bpSymbol);
+
+		// recursively add children to the nodes using the back pointers
+		traceBack(root, nextBP, bpChart);
+
+		return t;
+	}
+
+	// TODO - document - recuresivley add children to nodes by the backpointer chart
+	private void traceBack(Node parent, BackPointer currentBP, ArrayList<ArrayList<HashMap<String,BackPointer>>> bpChart){
+
+		// if no children - it's a leaf
+		if (currentBP.child1.col == -1){
+			return;
+		}
+
+		// if unary add only one child
+		if (currentBP.child2 == null){
+			// add the single node to parent
+			String label = currentBP.child1.sym;
+			Node child = new Node(label);
+			parent.addDaughter(child);
+			child.setParent(parent);
+			// recursively traceback on the child
+			BackPointer nextBP = bpChart.get(currentBP.child1.row).get(currentBP.child1.col).get(currentBP.child1.sym);
+			traceBack(child,nextBP,bpChart);
+		}
+
+		// if binary add 2 children
+		else{
+			// set children labels
+			String leftLabel = currentBP.child1.sym;
+			String rightLabel = currentBP.child2.sym;
+			// create children nodes
+			Node leftChild = new Node(leftLabel);
+			Node rightChild = new Node(rightLabel);
+			// append children to parent
+			parent.addDaughter(leftChild);
+			leftChild.setParent(parent);
+			parent.addDaughter(rightChild);
+			rightChild.setParent(parent);
+			// traceback recursively over children (left to right)
+			BackPointer nextLeftBP = bpChart.get(currentBP.child1.row).get(currentBP.child1.col).get(currentBP.child1.sym);
+			traceBack(leftChild,nextLeftBP,bpChart);
+			BackPointer nextRightChild = bpChart.get(currentBP.child2.row).get(currentBP.child2.col).get(currentBP.child2.sym);
+			traceBack(rightChild,nextRightChild,bpChart);
+		}
+	}
+
+	//TODO - document - iterate over stat symbol candidates and returns the relevant symbol in the prob table that hold minimal value
+	private String getMinimumBackPointerIndex(Set<String> candidates, ArrayList<ArrayList<HashMap<String,Double>>> probChart) {
+		double best = Double.POSITIVE_INFINITY;
+		String minSymbol = null;
+		for (String symbol : candidates){
+			Double prob = probChart.get(0).get(0).get(symbol);
+			if (prob != null && prob < best){
+				best = prob;
+				minSymbol = symbol;
+			}
+		}
+		return minSymbol;
 	}
 
 	/**
@@ -119,7 +204,7 @@ public class Decode {
 		int numOfWordsInInput = input.size();
 		int lastRowIndex = numOfWordsInInput - 1 ;
 		List<HashMap<String, Double>> lexedInput = lexicalizeInput(input); // represent the input as list of possible tag-probability hashmaps per word
-		for (int i = 0; i < numOfWordsInInput ; i++){
+		for (int i = 0; i < numOfWordsInInput - 1 ; i++){
 			probChart.get(lastRowIndex).get(i).putAll(lexedInput.get(i)); // add all symbol-minLogProbs to probchart
 			for (String terminalSymbol : lexedInput.get(i).keySet()){
 				BackPointer bp = new BackPointer(new ChartIndex(-1,-1,input.get(i))); // all terminals point to non-existant indices yet hold the original word value
@@ -160,6 +245,7 @@ public class Decode {
 									probChart.get(lastRowIndex).get(i).put(lhs,newProb);
 									// update backpointers entry
 									BackPointer newBP = new BackPointer(new ChartIndex(lastRowIndex,i,rhs));
+									bpChart.get(lastRowIndex).get(i).remove(lhs);
 									bpChart.get(lastRowIndex).get(i).put(lhs,newBP);
 								}
 							}
@@ -171,6 +257,7 @@ public class Decode {
 	}
 
 	// TODO - documentation - filling the charts according to CYK algorithm
+	// TODO iterated over possible symbol values in charts instead of iterating over all rules ... unlike lexparse ... see if there is timing differences
 	private void parseSynRules(ArrayList<ArrayList<HashMap<String,Double>>> probChart, ArrayList<ArrayList<HashMap<String,BackPointer>>> bpChart) {
 		int numOfRows = probChart.size();
 		// iterate over the table starting with row (size+1-span) 2 until reaching the top
@@ -180,49 +267,146 @@ public class Decode {
 			int numOfCols = probChart.get(row).size();
 			for (int start = 0; start < numOfCols ; start ++){ //start of span index
 				// iterate over different splits of the span
-				for (int split = 0 ; split < span - 1 ; split ++){ //TODO - check the index issues!!
-					// handle binary rules
-					// for all the binary rules find if possible production of rule lhs -> rhs1 rhs2
-					// iterate by right hand-side
-					for (String rhs : m_RHSindexedBinaryGrammar.keySet()){
-						String rhs1 = rhs.split(" ")[0];
-						String rhs2 = rhs.split(" ")[1];
-						// check if the relevant cells hold the relevant productions
-						ChartIndex firstChildIndex = new ChartIndex(row + span - 1 - split,start,rhs1);
-						ChartIndex secondChildIndex = new ChartIndex(row + 1 + split,start + split + 1,rhs2);
+				for (int split = 0 ; split < span - 1 ; split ++){
+					// check if the relevant cells hold the relevant productions
+					int child1Row = row + span - 1 - split;
+					int child1Col = start;
+					Set<String> possibleRHS1Symbols = probChart.get(child1Row).get(child1Col).keySet();
 
-						Double rhs1Prob = probChart.get(firstChildIndex.row).get(firstChildIndex.col).get(firstChildIndex.sym);
-						Double rhs2Prob = probChart.get(secondChildIndex.row).get(secondChildIndex.col).get(secondChildIndex.sym);
-						// if the relevant children exist
-						if (rhs1Prob != null && rhs2Prob != null){
-							// iterate over all possible parents (left side)
-							for (String lhs : m_RHSindexedBinaryGrammar.get(rhs).keySet()){
-								double ruleProb = m_RHSindexedBinaryGrammar.get(rhs).get(lhs);
-								double splitProb = rhs1Prob + rhs2Prob + ruleProb; // sum instead of product (log probabilities)
-								// update relevant entries in probChart and bpChart
-								ChartIndex parentIndex = new ChartIndex(row,start,lhs);
-								// update probchart
-								probChart.get(parentIndex.row).get(parentIndex.col).put(parentIndex.sym,splitProb);
-								// update bpChart
-								BackPointer bp = new BackPointer(firstChildIndex,secondChildIndex);
-								bpChart.get(parentIndex.row).get(parentIndex.col).put(parentIndex.sym,bp);
-							}
+					int child2Row = row + 1 + split;
+					int child2Col = start + split + 1;
+					Set<String> possibleRHS2Symbols = probChart.get(child2Row).get(child2Col).keySet();
+
+					// represent all possible right side combinations from our CKY table (from symbols in relevant cells)
+					HashSet<String> possibleRHSs = new HashSet<>();
+					for (String sym1 : possibleRHS1Symbols){
+						for (String sym2: possibleRHS2Symbols) {
+							possibleRHSs.add(sym1+" "+sym2);
 						}
 					}
+
+					for (String rhs : possibleRHSs){
+						// check if there are relevent rules for the possible RHS combinations
+						HashMap<String,Double> possibleLHSs = m_RHSindexedBinaryGrammar.get(rhs);
+						// if there are rules in the grammar such as lhs -> rhs1 rhs2
+						if (possibleLHSs != null){
+							// create relevant indices for bpChart and calculate relevant probs from the probChart
+							// handle first element of the RHS
+							String rhs1 = rhs.split(" ")[0];
+							ChartIndex child1Index = new ChartIndex(child1Row,child1Col,rhs1);
+							double rhs1Prob = probChart.get(child1Index.row).get(child1Index.col).get(rhs1);
+							// handle 2nd element of RHS
+							String rhs2 = rhs.split(" ")[1];
+							ChartIndex child2Index = new ChartIndex(child2Row,child2Col,rhs2);
+							double rhs2Prob = probChart.get(child2Index.row).get(child2Index.col).get(rhs2);
+							// for each possible lhs
+							for (String lhs : possibleLHSs.keySet()){
+								// get the rule probability from the  grammar
+								double ruleProb = m_RHSindexedBinaryGrammar.get(rhs).get(lhs);
+								// calculate total probability of the rules (multiplication as sum of logs)
+								double splitProb = ruleProb + rhs1Prob + rhs2Prob;
+								// update probChart and bpChart
+								ChartIndex parentIndex = new ChartIndex(row,start,lhs);
+								probChart.get(parentIndex.row).get(parentIndex.col).put(lhs,splitProb);
+								BackPointer bp = new BackPointer(child1Index,child2Index);
+								bpChart.get(parentIndex.row).get(parentIndex.col).put(parentIndex.sym,bp);
+							}
+						} // end iterating over possible LHS of rules
+					} // end iterating over possible RHS of potential rules
 				}
 
-				//handle unary rules
+				// handle unary rules
+				boolean stop = false;
+				while(!stop) {
+					stop = true; // by default stop the loop (continue only if there was an improvement. not infinite since we add probs and check for minimum
+					// check all unary rules
+					for (String rhs : m_RHSindexedUnaryGrammar.keySet()) {
+						Double childLogProb = probChart.get(row).get(start).get(rhs);
+						// if the inserted symbol could be derived from an unary rule
+						if (childLogProb != null) {
+							// for all the unary rules lhs -> rhs
+							for (String lhs : m_RHSindexedUnaryGrammar.get(rhs).keySet()) {
+								Double oldLogProb = probChart.get(row).get(start).get(lhs);
+								double ruleProb = m_RHSindexedUnaryGrammar.get(rhs).get(lhs);
+								double newProb = childLogProb + ruleProb;
+								// if never seen this symbol
+								if (oldLogProb == null) {
+									// continue to loop
+									stop = false;
+									// update probaility in the probChart - adding minus log probabilities
+									probChart.get(row).get(start).put(lhs, newProb);
+									// set according bpChart to the previous index (point to the last row, according word index and the symbol value)
+									BackPointer bp = new BackPointer(new ChartIndex(row, start, rhs));
+									bpChart.get(row).get(start).put(lhs, bp);
+								}
+								// else - we have already derived the symbol! we should check if we achieved improvement
+								else {
+									// compare probs. if it somehow improves continue loop
+									if (newProb < oldLogProb) {
+										// continue the loop
+										stop = false;
+										// update probChart
+										probChart.get(row).get(start).put(lhs, newProb);
+										// update backpointers entry
+										BackPointer newBP = new BackPointer(new ChartIndex(row, start, rhs));
+										bpChart.get(row).get(start).remove(lhs);
+										bpChart.get(row).get(start).put(lhs, newBP);
+									}
+								} // end updating better entry
+							}
+						}  // end iterating over rules that derive rhs
+					} // end iterating over unary rules
+				} // end my misery
 
-
+//				//handle unary rules //TODO - efficient but faulty method ... use only if timing is bad
+//				// extract every possible RHS from table
+//				Set<String> possibleRHSs = probChart.get(row).get(start).keySet();
+//				for (String rhs : possibleRHSs){
+//					// extract all relevant lhs values for the rule
+//					HashMap <String,Double> lhs2prob = m_RHSindexedUnaryGrammar.get(rhs);
+//					// for every releven rule lhs -> rhs
+//					if (lhs2prob != null){
+//						// calculate the child probability
+//						double childProb = probChart.get(row).get(start).get(rhs);
+//						for (String lhs : lhs2prob.keySet()){
+//							boolean stop = false;
+//							// get rule prob
+//							double ruleProb = m_RHSindexedUnaryGrammar.get(rhs).get(lhs);
+//							while (!stop){
+//								stop = true;
+//								// if we havn't seen the symbol already update relevant cells in charts
+//								Double oldProb = probChart.get(row).get(start).get(lhs);
+//								double newProb = childProb + ruleProb;
+//								if (oldProb == null){
+//									// continue while improving
+//									stop = false;
+//									// update probChart
+//									probChart.get(row).get(start).put(lhs,newProb);
+//									// update back pointer chart
+//									BackPointer bp = new BackPointer(new ChartIndex(row,start,rhs));
+//									bpChart.get(row).get(start).put(lhs,bp);
+//								}
+//								// if we saw the symbol already - compare probs and update only if better
+//								else{
+//									if (newProb < oldProb){
+//										// continue while improving
+//										// update probChart
+//										probChart.get(row).get(start).put(lhs,newProb);
+//										//update bpChart
+//										BackPointer bp = new BackPointer(new ChartIndex(row,start,rhs));
+//										bpChart.get(row).get(start).remove(lhs);
+//										bpChart.get(row).get(start).put(lhs,bp);
+//									}
+//								}
+//							}
+//						}
+//					}
+//				} // end handle unary //TODO - the implementation by iterating over only possible symbols my hurt unary loop as it ignores possible new symbols in the loop. check in results if critical
 
 			} // end iterating over columns
 		} // end iterating over rows
-		return;
-	}
-
-
-	private Tree buildTree(BackPointer bp) {
-	}
+	} // end creating charts from syntactic rules !!!
+	
 
 	/**
 	 * pre-process method that returns POS tag probabilites for terminals in given input
@@ -266,7 +450,13 @@ public class Decode {
 			this.child2 = child2;
 		}
 
-		//TODO - notice special case for terminals - chartindex should be (-1,-1,word)
+		@Override
+		public String toString() {
+			String s = "->" + child1.sym;
+			if (child2 != null)
+				s += child2.sym;
+			return (s);
+		}
 	}
 
 	private void addUnaryRules(){

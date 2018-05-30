@@ -85,4 +85,8 @@ public class Tree {
             this.m_nodeRoot.markovize_horizontally(order);
         }
 	}
+
+	public void markovize(int hOrder) {
+		this.m_nodeRoot.markovize(hOrder);
+	}
 }
