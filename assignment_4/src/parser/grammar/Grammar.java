@@ -29,6 +29,7 @@ public class Grammar {
 	protected Set<Rule> m_setSyntacticRules = new HashSet<Rule>();
 	protected Set<Rule> m_setLexicalRules = new HashSet<Rule>();
 	protected CountMap<Rule> m_cmRuleCounts = new CountMap<Rule>();
+	protected CountMap<Event> m_cmLHSSymbolCounts = new CountMap<>(); // holds the occurences of each lhs symbols -> used when calculating the conditioned probabilities in Q2.2
 	protected Map<String, Set<Rule>> m_lexLexicalEntries = new HashMap<String, Set<Rule>>();
 		
 	public Grammar() {
@@ -45,6 +46,10 @@ public class Grammar {
 
 	public CountMap<Rule> getRuleCounts() {
 		return m_cmRuleCounts;
+	}
+
+	public CountMap<Event> getLHSSymbolCounts() {
+		return m_cmLHSSymbolCounts;
 	}
 
 	public void addRule(Rule r)
@@ -78,6 +83,7 @@ public class Grammar {
 		
 		// update the rule counts 
 		getRuleCounts().increment(r);
+		getLHSSymbolCounts().increment(r.getLHS());
 	}
 	
 

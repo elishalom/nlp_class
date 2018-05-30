@@ -58,6 +58,7 @@ public class Train {
 
 			// add start symbols to grammer TODO - make sure it's correct ... or if maybe I should leave it with "S" alone
 			myGrammar.addStartSymbol(myTree.getRoot().getLabel());
+			myTree.getRoot().getDaughters().forEach( d -> myGrammar.addStartSymbol(d.getIdentifier()));
 		}
 
 		updateRuleProbs(myGrammar);
@@ -95,14 +96,24 @@ public class Train {
 		return theRules;
 	}
 
-	public void updateRuleProbs(Grammar grammar){
-        HashMap<Rule, Integer> countRules = grammar.getRuleCounts();
-		// TODO - fix occurences? (should be seperately counted by lhs of each rule (conditioned)
-        double occurrences = (double)IntStream.of(countRules.values().stream().mapToInt(v -> v).toArray()).sum();
-		for (Map.Entry<Rule, Integer> ruleCount : countRules.entrySet()) {
-			ruleCount.getKey().setMinusLogProb(- Math.log(ruleCount.getValue()/occurrences));
+	public void updateRuleProbs(Grammar grammar) {
+		HashMap<Rule, Integer> ruleCounts = grammar.getRuleCounts();
+		HashMap<Event, Integer> lhsCount = grammar.getLHSSymbolCounts();
+		for (Rule r : ruleCounts.keySet()) {
+			double minLogProb = (1.0 * ruleCounts.get(r)) / lhsCount.get(r.getLHS());
+			r.setMinusLogProb(-Math.log(minLogProb));
 		}
 	}
+
+
+//		old update probs code code!!! return only if problematic
+// 		HashMap<Rule, Integer> countRules = grammar.getRuleCounts();
+//		TODO - fix occurences? (should be seperately counted by lhs of each rule (conditioned)
+//		double occurrences = (double)IntStream.of(countRules.values().stream().mapToInt(v -> v).toArray()).sum();
+//		for (Map.Entry<Rule, Integer> ruleCount : countRules.entrySet()) {
+//			ruleCount.getKey().setMinusLogProb(- Math.log(ruleCount.getValue()/occurrences));
+//		}
+//	}
 
 	// Treebank Binarization by horizontal markovization parameter h
 	public void binarizeTreeBank(Treebank treebank, int hOrder) {

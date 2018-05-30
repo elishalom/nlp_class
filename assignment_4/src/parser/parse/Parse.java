@@ -52,8 +52,8 @@ public class Parse {
 		Treebank myTrainTreebank = TreebankReader.getInstance().read(true, args[1]);
 		
 		// 2. transform trees
-//		myGoldTreebank.binarize();  	// TODO - fix
-//		myTrainTreebank.binarize(); 	// TODO - fix
+		myGoldTreebank.binarize();  	// TODO - fix
+		myTrainTreebank.binarize(); 	// TODO - fix
 
 		System.out.println(java.time.LocalTime.now() + "binarizing input trees"); // TODO - for debug
 
@@ -63,10 +63,10 @@ public class Parse {
 			hOrder = Integer.parseInt(args[3]);
 		}
 
-//		myGoldTreebank.markovize_horizontally(hOrder);  	// TODO - fix
-//		myTrainTreebank.markovize_horizontally(hOrder); 	// TODO - fix
+		myGoldTreebank.markovize_horizontally(hOrder);  	// TODO - fix
+		myTrainTreebank.markovize_horizontally(hOrder); 	// TODO - fix
 
-		Train.getInstance().binarizeTreeBank(myTrainTreebank,hOrder);
+//		Train.getInstance().binarizeTreeBank(myTrainTreebank,hOrder);
 
 		// 3. train
 

@@ -83,13 +83,12 @@ public class Decode {
 		ArrayList<ArrayList<HashMap<String,BackPointer>>> bpChart = createPyramidTable(input.size());
 
 		// build probability and backpointer charts according to CYK algorithm
-		System.out.println(java.time.LocalTime.now() + "\t building cyk tables");
+//		System.out.println(java.time.LocalTime.now() + "\t building cyk tables");
 		buildCYKCharts(probChart,bpChart,input); //TODO - recheck the binary rules parse ... may have overlooked the case if the same symbol derived other binary rules !!!! (A->BC after A->XY)
-		System.out.println(java.time.LocalTime.now() + "\t finished building cyk tables");
+//		System.out.println(java.time.LocalTime.now() + "\t finished building cyk tables");
 
 		// get the minimal -logProb back pointer's index (0,0,symbol)
-		Set<String> candidates = m_setStartSymbols;
-		String bestBPSymbol = getMinimumBackPointerIndex(candidates,probChart);
+		String bestBPSymbol = getMinimumBackPointerIndex(m_setStartSymbols,probChart);
 
 		// build the tree using the backpointers
 		// if CYK fails, use the baseline outcome
@@ -415,7 +414,7 @@ public class Decode {
 	 */
 	private List<HashMap<String,Double>> lexicalizeInput(List<String> input) {
 		List<HashMap<String,Double>> posTagsProbs = new ArrayList<>();
-		for (int i = 1; i < input.size() ; i++) {
+		for (int i = 0; i < input.size() ; i++) {
 			String word = input.get(i);
 			HashMap<String, Double> hm = new HashMap<>();
 			Set<Rule> lexRules = m_mapLexicalRules.get(word);
