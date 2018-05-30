@@ -203,7 +203,7 @@ public class Decode {
 		int numOfWordsInInput = input.size();
 		int lastRowIndex = numOfWordsInInput - 1 ;
 		List<HashMap<String, Double>> lexedInput = lexicalizeInput(input); // represent the input as list of possible tag-probability hashmaps per word
-		for (int i = 0; i < numOfWordsInInput - 1 ; i++){
+		for (int i = 0; i < numOfWordsInInput ; i++){
 			probChart.get(lastRowIndex).get(i).putAll(lexedInput.get(i)); // add all symbol-minLogProbs to probchart
 			for (String terminalSymbol : lexedInput.get(i).keySet()){
 				BackPointer bp = new BackPointer(new ChartIndex(-1,-1,input.get(i))); // all terminals point to non-existant indices yet hold the original word value
