@@ -3,16 +3,12 @@ package train;
 import grammar.Event;
 import grammar.Grammar;
 import grammar.Rule;
-
-import java.util.*;
-import java.util.regex.Pattern;
-import java.util.stream.IntStream;
-
 import tree.Node;
 import tree.Tree;
 import treebank.Treebank;
-import utils.CyclicQueue;
+import utils.CircularFifoQueue;
 
+import java.util.*;
 
 /**
  * 
@@ -96,7 +92,7 @@ public class Train {
 		return theRules;
 	}
 
-	public void updateRuleProbs(Grammar grammar) {
+	private void updateRuleProbs(Grammar grammar) {
 		HashMap<Rule, Integer> ruleCounts = grammar.getRuleCounts();
 		HashMap<Event, Integer> lhsCount = grammar.getLHSSymbolCounts();
 		for (Rule r : ruleCounts.keySet()) {
@@ -104,7 +100,6 @@ public class Train {
 			r.setMinusLogProb(-Math.log(minLogProb));
 		}
 	}
-
 
 //		old update probs code code!!! return only if problematic
 // 		HashMap<Rule, Integer> countRules = grammar.getRuleCounts();
@@ -121,7 +116,7 @@ public class Train {
 		if (hOrder == -1) {
 			sistersQueue = new LinkedList<Node>();
 		} else {
-			sistersQueue = new CyclicQueue<Node>(hOrder);
+			sistersQueue = new CircularFifoQueue<Node>(hOrder);
 		}
 		treebank.getAnalyses().forEach(
 				tree -> binarizeNode(tree.getRoot(), sistersQueue));
@@ -167,11 +162,45 @@ public class Train {
 		for (Node sister : new ArrayList<>(sistersQueue)){
 			sb.append(sister).append("/");
 		}
-		String sistersReresentation = sb.toString();
-		rightChild.setIdentifier(cuddentId + "@/" + sistersReresentation);
+		String sistersRepresentation = sb.toString();
+		rightChild.setIdentifier(cuddentId + "@/" + sistersRepresentation);
 		rightChild.setRoot(false);
 		rightChild.setParent(currentNode);
 	}
+
+	// de-binarization by adding children of fictive nodes to their parents and de-annotate
+	public void debinarizeTreeList(List<Tree> parseTrees) {
+		parseTrees.forEach(tree -> deBinarizeNode(tree.getRoot()));
+	}
+
+	// recuresively de-binarize and de-annotate nodes and its children
+	private void deBinarizeNode(Node currentNode) {
+		// stop condition - do not operate on leaves
+		if (currentNode.isLeaf()){
+			return;
+		}
+		List<Node> daughters = currentNode.getDaughters();
+		// current node is at least unary. binarization left always non-fictive lef-child
+		Node leftDaughter = daughters.get(0);
+		// recursively de-binarize the node's left daughter
+		deBinarizeNode(leftDaughter);
+		// if unary, no other daughter to debinarize
+		if (daughters.size() == 1){
+			return;
+		}
+		// otherwise the node is binary. recursively debinarize it's right daughter
+		Node rightDaughter = daughters.get(1);
+		deBinarizeNode(rightDaughter);
+
+		// if current node is fictive - disconnect the node and add it's children to it's parent
+		if (currentNode.getIdentifier().contains("@")){
+			Node currentParent = currentNode.getParent();
+			currentParent.removeDaughter(currentNode);
+			daughters.forEach(currentDaughter ->currentParent.addDaughter(currentDaughter));
+		}
+	}
+
+	//
 
 
 //	// recursively perofrom binarization (and markovization) for each node and it's children
