@@ -84,18 +84,17 @@ public class Decode {
 
 		// build probability and backpointer charts according to CYK algorithm
 //		System.out.println(java.time.LocalTime.now() + "\t building cyk tables");
-		buildCYKCharts(probChart,bpChart,input); //TODO - recheck the binary rules parse ... may have overlooked the case if the same symbol derived other binary rules !!!! (A->BC after A->XY)
+		buildCYKCharts(probChart,bpChart,input);
 //		System.out.println(java.time.LocalTime.now() + "\t finished building cyk tables");
 
 		// get the minimal -logProb back pointer's index (0,0,symbol)
-		String bestBPSymbol = getMinimumBackPointerIndex(m_setStartSymbols,probChart);
+        Set<String> candidates = m_setStartSymbols;
+		String bestBPSymbol = getMinimumBackPointerIndex(candidates,probChart);
 
 		// build the tree using the backpointers
 		// if CYK fails, use the baseline outcome
 		if (bestBPSymbol != null){
-			System.out.println(java.time.LocalTime.now() + "\t building best matching tree");
 			t = buildTree(bpChart,bestBPSymbol);
-			System.out.println(java.time.LocalTime.now() + "\t building best matching tree");
 		}
 
 		return t;
@@ -103,16 +102,21 @@ public class Decode {
 
 	// TODO - document - build tree from back pointers
 	private Tree buildTree(ArrayList<ArrayList<HashMap<String,BackPointer>>> bpChart, String bpSymbol) {
-		// set the minimal backPointer as root
-		Node root = new Node(bpSymbol);
+		// create a root node
+		Node root = new Node("TOP");
 		root.setRoot(true);
 		Tree t = new Tree(root);
+
+        // set the minimal backPointer's symbol as sub-root
+        Node firstNonTerminal = new Node(bpSymbol);
+        root.addDaughter(firstNonTerminal);
+        firstNonTerminal.setParent(root);
 
 		// recover 1st backpointer
 		BackPointer nextBP = bpChart.get(0).get(0).get(bpSymbol);
 
 		// recursively add children to the nodes using the back pointers
-		traceBack(root, nextBP, bpChart);
+		traceBack(firstNonTerminal, nextBP, bpChart);
 
 		return t;
 	}
@@ -122,6 +126,11 @@ public class Decode {
 
 		// if no children - it's a leaf
 		if (currentBP.child1.col == -1){
+		    // add the terminal node to the tree and return
+            String word = currentBP.child1.sym;
+            Terminal treminalNode = new Terminal(word);
+            parent.addDaughter(treminalNode);
+            treminalNode.setParent(parent);
 			return;
 		}
 
@@ -221,21 +230,24 @@ public class Decode {
 					if (terminalLogProb != null){
 						// for all the unary rules lhs -> rhs
 						for (String lhs : m_RHSindexedUnaryGrammar.get(rhs).keySet()){
+						    // probability of the rule in the grammar
+                            double ruleProb = m_RHSindexedUnaryGrammar.get(rhs).get(lhs);
+                            // new probability is product of the rule probability and the previous step
+                            double newProb = terminalLogProb + ruleProb;
+                            // check if we already seen the non-terminal lhs and get the calculated probability for it
 							Double unaryLogProb = probChart.get(lastRowIndex).get(i).get(lhs);
 							// if never seen this rule
 							if (unaryLogProb == null){
 								// continue to loop
 								stop = false;
 								// update probaility in the probChart - adding minus log probabilities
-								probChart.get(lastRowIndex).get(i).put(lhs,terminalLogProb + m_RHSindexedUnaryGrammar.get(rhs).get(lhs));
+								probChart.get(lastRowIndex).get(i).put(lhs,newProb);
 								// set according bpChart to the previous index (point to the last row, according word index and the symbol value)
 								BackPointer bp = new BackPointer(new ChartIndex(lastRowIndex,i,rhs));
 								bpChart.get(lastRowIndex).get(i).put(lhs,bp);
 							}
 							// else - we have already derived the symbol! we should check if we achieved improvement
 							else{
-								// compare probs
-								double newProb = terminalLogProb + m_RHSindexedUnaryGrammar.get(rhs).get(lhs);
 								// if it somehow improves continue loop
 								if (newProb < unaryLogProb){
 									// continue the loop
@@ -274,6 +286,9 @@ public class Decode {
 
 					int child2Row = row + 1 + split;
 					int child2Col = start + split + 1;
+					if (row == 18 && start == 18){
+						int x = 0 ;
+					}
 					Set<String> possibleRHS2Symbols = probChart.get(child2Row).get(child2Col).keySet();
 
 					// represent all possible right side combinations from our CKY table (from symbols in relevant cells)
@@ -303,12 +318,18 @@ public class Decode {
 								// get the rule probability from the  grammar
 								double ruleProb = m_RHSindexedBinaryGrammar.get(rhs).get(lhs);
 								// calculate total probability of the rules (multiplication as sum of logs)
-								double splitProb = ruleProb + rhs1Prob + rhs2Prob;
-								// update probChart and bpChart
-								ChartIndex parentIndex = new ChartIndex(row,start,lhs);
-								probChart.get(parentIndex.row).get(parentIndex.col).put(lhs,splitProb);
-								BackPointer bp = new BackPointer(child1Index,child2Index);
-								bpChart.get(parentIndex.row).get(parentIndex.col).put(parentIndex.sym,bp);
+								double newProb = ruleProb + rhs1Prob + rhs2Prob;
+                                Double oldProb = probChart.get(row).get(start).get(lhs);
+								// update probChart and bpChart if improve previous prob
+                                if (oldProb == null || newProb < oldProb){
+                                    ChartIndex parentIndex = new ChartIndex(row,start,lhs);
+                                    // update prob
+                                    probChart.get(parentIndex.row).get(parentIndex.col).put(lhs,newProb);
+                                    // update bpChart
+                                    BackPointer bp = new BackPointer(child1Index,child2Index);
+                                    bpChart.get(parentIndex.row).get(parentIndex.col).put(parentIndex.sym,bp);
+                                }
+
 							}
 						} // end iterating over possible LHS of rules
 					} // end iterating over possible RHS of potential rules
@@ -405,7 +426,7 @@ public class Decode {
 			} // end iterating over columns
 		} // end iterating over rows
 	} // end creating charts from syntactic rules !!!
-	
+
 
 	/**
 	 * pre-process method that returns POS tag probabilites for terminals in given input

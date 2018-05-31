@@ -55,7 +55,7 @@ public class Parse {
 //		myGoldTreebank.binarize();  	// TODO - fix
 //		myTrainTreebank.binarize(); 	// TODO - fix
 
-		System.out.println(java.time.LocalTime.now() + "binarizing input trees"); // TODO - for debug
+		System.out.println(java.time.LocalTime.now() + "\tbinarizing input trees"); // TODO - for debug
 
 		// markovization order default to remember all siblings
 		int hOrder = -1;
@@ -84,15 +84,15 @@ public class Parse {
 			Tree myParseTree = Decode.getInstance(myGrammar).decode(mySentence);
 			myParseTrees.add(myParseTree);
 
-			System.out.println(java.time.LocalTime.now() + "\t decoded tree " + i + " out of " + myGoldTreebank.size()); // TODO for debug
+			System.out.println(java.time.LocalTime.now() + "\t decoded tree " + (i+1) + "/" + myGoldTreebank.size() + " len:" + mySentence.size()); // TODO for debug
 		}
 		
 		// 5. de-transform trees
-		System.out.println(java.time.LocalTime.now() + "de-binarizing input trees"); // TODO - for debug
 		Train.getInstance().debinarizeTreeList(myParseTrees); //TODO - maybe move to another class?
 
 		// 6. write output
-		writeOutput(args[2], myGrammar, myParseTrees);	
+		writeOutput(args[2], myGrammar, myParseTrees);
+		System.out.println(java.time.LocalTime.now() + "\tDONE! wrote files to " + args[2]); // TODO - for debug
 	}
 	
 	
