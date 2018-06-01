@@ -20,6 +20,7 @@ public class Decode {
 	private static HashMap<String,HashMap<String, Double>> m_RHSindexedUnaryGrammar;
 	private static HashMap<String,HashMap<String, Double>> m_RHSindexedBinaryGrammar;
 	private static Set<String> m_setStartSymbols;
+	private static HashMap<String, Double> m_startSymbolProb;
 
     /**
      * Implementation of a singleton pattern
@@ -57,6 +58,8 @@ public class Decode {
 
 			m_RHSindexedUnaryGrammar = indexGrammarByRHS(unaryRules);
 			m_RHSindexedBinaryGrammar = indexGrammarByRHS(binaryRules);
+
+			m_startSymbolProb = g.getStartSymbolsProb();
 		}
 		return m_singDecoder;
 	}
@@ -83,9 +86,7 @@ public class Decode {
 		ArrayList<ArrayList<HashMap<String,BackPointer>>> bpChart = createPyramidTable(input.size());
 
 		// build probability and backpointer charts according to CYK algorithm
-//		System.out.println(java.time.LocalTime.now() + "\t building cyk tables");
 		buildCYKCharts(probChart,bpChart,input);
-//		System.out.println(java.time.LocalTime.now() + "\t finished building cyk tables");
 
 		// get the minimal -logProb back pointer's index (0,0,symbol)
         Set<String> candidates = m_setStartSymbols;
@@ -172,10 +173,13 @@ public class Decode {
 		double best = Double.POSITIVE_INFINITY;
 		String minSymbol = null;
 		for (String symbol : candidates){
-			Double prob = probChart.get(0).get(0).get(symbol);
-			if (prob != null && prob < best){
-				best = prob;
-				minSymbol = symbol;
+			Double drivationProb = probChart.get(0).get(0).get(symbol);
+			if (drivationProb != null){
+				double prob = drivationProb + m_startSymbolProb.get(symbol);
+				if (prob < best){
+					best = prob;
+					minSymbol = symbol;
+				}
 			}
 		}
 		return minSymbol;

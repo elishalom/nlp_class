@@ -7,6 +7,7 @@ import tree.Node;
 import tree.Tree;
 import treebank.Treebank;
 import utils.CircularFifoQueue;
+import utils.CountMap;
 
 import java.util.*;
 import java.util.stream.IntStream;
@@ -53,10 +54,10 @@ public class Train {
 			List<Rule> theRules = getRules(myTree);
 			myGrammar.addAll(theRules);
 
-			// add start symbols to grammer TODO - make sure it's correct ... or if maybe I should leave it with "S" alone
+			// add start symbols to grammer
 			myGrammar.addStartSymbol(myTree.getRoot().getLabel());
-
 			myTree.getRoot().getDaughters().forEach( d -> myGrammar.addStartSymbol(d.getIdentifier()));
+			myTree.getRoot().getDaughters().forEach( d -> myGrammar.getStartSymbolsCount().increment(d.getIdentifier()));
 		}
 
 		updateRuleProbs(myGrammar,smoothing);
@@ -106,6 +107,13 @@ public class Train {
 				lhsCount = (double) grammar.getSynLHSSymbolCounts().get(r.getLHS().toString());
 			double minLogProb = ((1.0 * ruleCounts.get(r)) / lhsCount);
 			r.setMinusLogProb(-Math.log(minLogProb));
+		}
+
+		//update start symbol probs
+		HashMap<String, Integer> startCountMap = grammar.getStartSymbolsCount();
+		double numOfSentences = (double) ((CountMap<String>) startCountMap).allCounts();
+		for (String startSym : startCountMap.keySet()){
+			grammar.getStartSymbolsProb().put(startSym,-Math.log((double)(startCountMap.get(startSym))/numOfSentences));
 		}
 
 		// if used smoothing set LHS->UNK rules according to the training set's distribution

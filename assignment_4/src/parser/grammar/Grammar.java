@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import tree.Node;
 import utils.CountMap;
 
 /**
@@ -31,7 +32,15 @@ public class Grammar {
 	protected CountMap<Rule> m_cmRuleCounts = new CountMap<Rule>();
 	protected CountMap<String> m_cmLexLHSSymbolCounts = new CountMap<>(); // holds the occurences of each lhs symbols -> used when calculating the conditioned probabilities in Q2.2
 	protected CountMap<String> m_cmSynLHSSymbolCounts = new CountMap<>(); // holds the occurences of each lhs symbols -> used when calculating the conditioned probabilities in Q2.2
+	protected CountMap<String> m_cmStartSymbolCount = new CountMap<>(); // holds the occurences of each start symbol
+
+	public HashMap<String, Double> getStartSymbolsProb() {
+		return m_startSymbolsProb;
+	}
+
+	protected HashMap<String, Double> m_startSymbolsProb = new HashMap<>();
 	protected Map<String, Set<Rule>> m_lexLexicalEntries = new HashMap<String, Set<Rule>>();
+
 		
 	public Grammar() {
 		super();
@@ -165,5 +174,9 @@ public class Grammar {
 		for (int i = 0; i < theRules.size(); i++) {
 			addRule(theRules.get(i));
 		}
+	}
+
+	public CountMap<String> getStartSymbolsCount() {
+		return this.m_cmStartSymbolCount;
 	}
 }
