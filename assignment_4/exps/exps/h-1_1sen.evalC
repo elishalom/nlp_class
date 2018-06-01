@@ -1,0 +1,61 @@
+   Sentence                 Matched   Brackets      Cross         Corr     Tag
+  ID Length  Recall  Precis Bracket   gold   test Bracket  Words  Tags Accracy
+______________________________________________________________________________
+   1     20   52.17   52.17      12     23     23       5     20    17   85.00
+______________________________________________________________________________
+              52.17   52.17      12     23     23       5     20    17   85.00
+
+__________________ Category Statistics ___________________
+
+     label      % gold   catRecall   catPrecis   catFScore
+__________________________________________________________
+        NP       34.78       54.55       75.00       63.16
+         S       17.39         NaN        0.00         NaN
+        VP       13.04       66.67       66.67       66.67
+        PP       13.04       50.00       66.67       57.14
+      ADJP        8.70      100.00       50.00       66.67
+      ADVP        4.35      100.00      100.00      100.00
+      SBAR        4.35         NaN        0.00         NaN
+      INTJ        4.35         NaN        0.00         NaN
+        SQ        0.00        0.00         NaN         NaN
+
+   Crossing brackets
+   test/gold   count
+____________________
+     SQ/SBAR       2
+        PP/S       1
+     PP/SBAR       1
+       NP/PP       1
+
+Wrong Category Statistics
+   test/gold   count
+____________________
+       NP/VP       1
+        SQ/S       1
+       VP/NP       1
+     NP/ADJP       1
+
+
+____________ Summary _____________
+
+______________ All _______________
+Number of sentence        =      1
+Bracketing Recall         =  52.17
+Bracketing Precision      =  52.17
+Bracketing FMeasure       =  52.17
+Complete match            =   0.00
+Average crossing          =   5.00
+No crossing               =   0.00
+2 or less crossing        =   0.00
+Tagging accuracy          =  85.00
+
+____________ len<=40 _____________
+Number of sentence        =      1
+Bracketing Recall         =  52.17
+Bracketing Precision      =  52.17
+Bracketing FMeasure       =  52.17
+Complete match            =   0.00
+Average crossing          =   5.00
+No crossing               =   0.00
+2 or less crossing        =   0.00
+Tagging accuracy          =  85.00
