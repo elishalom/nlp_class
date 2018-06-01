@@ -45,7 +45,7 @@ public class Train {
 
 	}
 	
-	public Grammar train(Treebank myTreebank)
+	public Grammar train(Treebank myTreebank,boolean smoothing)
 	{
 		Grammar myGrammar = new Grammar();
 		for (int i = 0; i < myTreebank.size(); i++) {
@@ -59,7 +59,7 @@ public class Train {
 			myTree.getRoot().getDaughters().forEach( d -> myGrammar.addStartSymbol(d.getIdentifier()));
 		}
 
-		updateRuleProbs(myGrammar);
+		updateRuleProbs(myGrammar,smoothing);
 
 		return myGrammar;
 	}
@@ -94,36 +94,52 @@ public class Train {
 		return theRules;
 	}
 
-	private void updateRuleProbs(Grammar grammar) {
+	private void updateRuleProbs(Grammar grammar, boolean smoothing) {
 		HashMap<Rule, Integer> ruleCounts = grammar.getRuleCounts();
 		for (Rule r : ruleCounts.keySet()) {
 			double lhsCount;
 			// if lexical rule
 			if (r.isLexical())
-				lhsCount = (double) grammar.getLexLHSSymbolCounts().get(r.getLHS());
+				lhsCount = (double) grammar.getLexLHSSymbolCounts().get(r.getLHS().toString());
 			// if syntactic rule
 			else
-				lhsCount = (double) grammar.getSynLHSSymbolCounts().get(r.getLHS());
+				lhsCount = (double) grammar.getSynLHSSymbolCounts().get(r.getLHS().toString());
 			double minLogProb = ((1.0 * ruleCounts.get(r)) / lhsCount);
 			r.setMinusLogProb(-Math.log(minLogProb));
 		}
-	}
 
-//		old update probs code code!!! return only if problematic
-// 		HashMap<Rule, Integer> countRules = grammar.getRuleCounts();
-//		TODO - fix occurences? (should be seperately counted by lhs of each rule (conditioned)
-//		double occurrences = (double)IntStream.of(countRules.values().stream().mapToInt(v -> v).toArray()).sum();
-//		for (Map.Entry<Rule, Integer> ruleCount : countRules.entrySet()) {
-//			ruleCount.getKey().setMinusLogProb(- Math.log(ruleCount.getValue()/occurrences));
-//		}
-//	}
+		// if used smoothing set LHS->UNK rules according to the training set's distribution
+		if (smoothing) {
+			String[] commonPOS = new String[]{"NN", "VB", "NNT", "JJ", "NNP"};
+			double numOfLexicalRules = (double) grammar.getLexLHSSymbolCounts().allCounts();
+			// remove puctuation marks!! select top 5 picks
+			for (String preTerminalSymbol : commonPOS) {
+				Rule newRule = new Rule(preTerminalSymbol, "~UNK~",true);
+				double symbolOccurence = grammar.getLexLHSSymbolCounts().get(preTerminalSymbol);
+				double ruleProb = -Math.log(symbolOccurence / numOfLexicalRules);
+				newRule.setMinusLogProb(ruleProb);
+				grammar.addRule(newRule);
+			}
+		}
+
+		// without smoothing assume all unkown words are nouns
+		else {
+			Rule newRule = new Rule("NN","~UNK~",true);
+			newRule.setMinusLogProb(0);
+			grammar.addRule(newRule);
+		}
+	}
 
 	// Treebank Binarization by horizontal markovization parameter h
 	public void binarizeTreeBank(Treebank treebank, int hOrder) {
 		Queue<Node> sistersQueue;
 		if (hOrder == -1) {
 			sistersQueue = new LinkedList<Node>();
-		} else {
+		} else if (hOrder == 0){
+			treebank.getAnalyses().forEach(tree -> zeroMemoryBinarize(tree.getRoot(),"@"+tree.getRoot().getIdentifier()+"//"));
+			return;
+		}
+		else {
 			sistersQueue = new CircularFifoQueue<Node>(hOrder);
 		}
 		treebank.getAnalyses().forEach(
@@ -166,6 +182,45 @@ public class Train {
 			binarizeNode(rightChild,sistersQueue);
 			sistersQueue.clear();
 			binarizeNode(leftChild, sistersQueue);
+		}
+	}
+
+	// does an h=0 binarization annotating fictive nodes only with "@ROOT" sign
+	private void zeroMemoryBinarize(Node currentNode, String fictiveSymbol) {
+		// stop condition - reached leaf
+		if (currentNode.isLeaf())
+			return;
+		List<Node> daughters = currentNode.getDaughters();
+		Node leftChild = daughters.get(0);
+		Node rightChild;
+		int numOfdaughters = daughters.size();
+		// if one child - binarize it and dismiss redundant sisters to remember
+		if (numOfdaughters == 1){
+			zeroMemoryBinarize(leftChild, fictiveSymbol);
+		}
+		// if two children - clear redundant sisters to remember and binarize both
+		else if (numOfdaughters == 2) {
+			zeroMemoryBinarize(leftChild, fictiveSymbol);
+			rightChild = daughters.get(1);
+			zeroMemoryBinarize(rightChild, fictiveSymbol);
+		}
+		// else there are more than 2 children -> annotate and create fictive node
+		else {
+			// add fictive right child
+			rightChild = new Node(fictiveSymbol);
+			rightChild.setParent(currentNode);
+
+			// remove all the little sisters and set them as the fictive node's daughters
+			for (int i = 1; i < currentNode.getDaughters().size() ; i++){
+				rightChild.addDaughter(currentNode.getDaughters().remove(i));
+			}
+
+			// add the new fictive node as the current node's right child
+			currentNode.addDaughter(rightChild);
+
+			// binarize grandchildren recursively
+			zeroMemoryBinarize(rightChild,fictiveSymbol);
+			zeroMemoryBinarize(leftChild, fictiveSymbol); //maybe needless? always binary?
 		}
 	}
 
@@ -214,8 +269,3 @@ public class Train {
 		}
 	}
 }
-
-
-
-
-

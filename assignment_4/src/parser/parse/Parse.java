@@ -50,11 +50,8 @@ public class Parse {
 
 		Treebank myGoldTreebank = TreebankReader.getInstance().read(true, args[0]);
 		Treebank myTrainTreebank = TreebankReader.getInstance().read(true, args[1]);
-		
-		// 2. transform trees
-//		myGoldTreebank.binarize();  	// TODO - fix
-//		myTrainTreebank.binarize(); 	// TODO - fix
 
+		// 2. transform trees
 		System.out.println(java.time.LocalTime.now() + "\tbinarizing input trees"); // TODO - for debug
 
 		// markovization order default to remember all siblings
@@ -62,20 +59,18 @@ public class Parse {
 		if (args.length > 3) {
 			hOrder = Integer.parseInt(args[3]);
 		}
-
-//		myGoldTreebank.markovize_horizontally(hOrder);  	// TODO - fix
-//		myTrainTreebank.markovize_horizontally(hOrder); 	// TODO - fix
-
 		Train.getInstance().binarizeTreeBank(myTrainTreebank,hOrder);
 
 		// 3. train
-
 		System.out.println(java.time.LocalTime.now() + "\ttraining model"); // TODO - for debug
 
-		Grammar myGrammar = Train.getInstance().train(myTrainTreebank);
+		boolean smoothing = false;
+		if ((args.length) > 4 && (args[4].charAt(0) == 'y')){
+				smoothing = true;
+		}
+		Grammar myGrammar = Train.getInstance().train(myTrainTreebank, smoothing);
 		
 		// 4. decode
-
 		System.out.println(java.time.LocalTime.now() + "\tdecoding test set"); // TODO - for debug
 
 		List<Tree> myParseTrees = new ArrayList<Tree>();		

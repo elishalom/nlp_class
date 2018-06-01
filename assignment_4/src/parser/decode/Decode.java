@@ -329,7 +329,6 @@ public class Decode {
                                     BackPointer bp = new BackPointer(child1Index,child2Index);
                                     bpChart.get(parentIndex.row).get(parentIndex.col).put(parentIndex.sym,bp);
                                 }
-
 							}
 						} // end iterating over possible LHS of rules
 					} // end iterating over possible RHS of potential rules
@@ -377,52 +376,6 @@ public class Decode {
 						}  // end iterating over rules that derive rhs
 					} // end iterating over unary rules
 				} // end my misery
-
-//				//handle unary rules //TODO - efficient but faulty method ... use only if timing is bad
-//				// extract every possible RHS from table
-//				Set<String> possibleRHSs = probChart.get(row).get(start).keySet();
-//				for (String rhs : possibleRHSs){
-//					// extract all relevant lhs values for the rule
-//					HashMap <String,Double> lhs2prob = m_RHSindexedUnaryGrammar.get(rhs);
-//					// for every releven rule lhs -> rhs
-//					if (lhs2prob != null){
-//						// calculate the child probability
-//						double childProb = probChart.get(row).get(start).get(rhs);
-//						for (String lhs : lhs2prob.keySet()){
-//							boolean stop = false;
-//							// get rule prob
-//							double ruleProb = m_RHSindexedUnaryGrammar.get(rhs).get(lhs);
-//							while (!stop){
-//								stop = true;
-//								// if we havn't seen the symbol already update relevant cells in charts
-//								Double oldProb = probChart.get(row).get(start).get(lhs);
-//								double newProb = childProb + ruleProb;
-//								if (oldProb == null){
-//									// continue while improving
-//									stop = false;
-//									// update probChart
-//									probChart.get(row).get(start).put(lhs,newProb);
-//									// update back pointer chart
-//									BackPointer bp = new BackPointer(new ChartIndex(row,start,rhs));
-//									bpChart.get(row).get(start).put(lhs,bp);
-//								}
-//								// if we saw the symbol already - compare probs and update only if better
-//								else{
-//									if (newProb < oldProb){
-//										// continue while improving
-//										// update probChart
-//										probChart.get(row).get(start).put(lhs,newProb);
-//										//update bpChart
-//										BackPointer bp = new BackPointer(new ChartIndex(row,start,rhs));
-//										bpChart.get(row).get(start).remove(lhs);
-//										bpChart.get(row).get(start).put(lhs,bp);
-//									}
-//								}
-//							}
-//						}
-//					}
-//				} // end handle unary //TODO - the implementation by iterating over only possible symbols my hurt unary loop as it ignores possible new symbols in the loop. check in results if critical
-
 			} // end iterating over columns
 		} // end iterating over rows
 	} // end creating charts from syntactic rules !!!
@@ -439,8 +392,12 @@ public class Decode {
 			String word = input.get(i);
 			HashMap<String, Double> hm = new HashMap<>();
 			Set<Rule> lexRules = m_mapLexicalRules.get(word);
-			// if the terminal did'nt appear in the training - tag it as NN using the default NN -> UNK rule
-			if (lexRules == null) hm.put("NN", 0.0);
+			// if the terminal did'nt appear in the training - tag it as NN using the default NN -> UNK rule or use smoothing values for lhs->~UNK~ possibilities
+			if (lexRules == null){
+				for (Rule r : m_mapLexicalRules.get("~UNK~")){
+					hm.put(r.getLHS().toString(),r.getMinusLogProb());
+				}
+			}
 				// else - append appropriate terminal symbols and their according minusLogProbs
 			else {
 				for (Rule r : lexRules) {

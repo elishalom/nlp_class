@@ -29,8 +29,8 @@ public class Grammar {
 	protected Set<Rule> m_setSyntacticRules = new HashSet<Rule>();
 	protected Set<Rule> m_setLexicalRules = new HashSet<Rule>();
 	protected CountMap<Rule> m_cmRuleCounts = new CountMap<Rule>();
-	protected CountMap<Event> m_cmLexLHSSymbolCounts = new CountMap<>(); // holds the occurences of each lhs symbols -> used when calculating the conditioned probabilities in Q2.2
-	protected CountMap<Event> m_cmSynLHSSymbolCounts = new CountMap<>(); // holds the occurences of each lhs symbols -> used when calculating the conditioned probabilities in Q2.2
+	protected CountMap<String> m_cmLexLHSSymbolCounts = new CountMap<>(); // holds the occurences of each lhs symbols -> used when calculating the conditioned probabilities in Q2.2
+	protected CountMap<String> m_cmSynLHSSymbolCounts = new CountMap<>(); // holds the occurences of each lhs symbols -> used when calculating the conditioned probabilities in Q2.2
 	protected Map<String, Set<Rule>> m_lexLexicalEntries = new HashMap<String, Set<Rule>>();
 		
 	public Grammar() {
@@ -49,11 +49,11 @@ public class Grammar {
 		return m_cmRuleCounts;
 	}
 
-	public CountMap<Event> getLexLHSSymbolCounts() {
+	public CountMap<String> getLexLHSSymbolCounts() {
 		return m_cmLexLHSSymbolCounts;
 	}
 
-	public CountMap<Event> getSynLHSSymbolCounts() {
+	public CountMap<String> getSynLHSSymbolCounts() {
 		return m_cmSynLHSSymbolCounts;
 	}
 
@@ -75,7 +75,7 @@ public class Grammar {
 			getLexicalEntries().get(eRhs.toString()).add(r);
 
 			// update lexical LHS symbol counts
-			getLexLHSSymbolCounts().increment(r.getLHS());
+			getLexLHSSymbolCounts().increment(r.getLHS().toString());
 		}
 		else 
 		{
@@ -85,7 +85,7 @@ public class Grammar {
 			getNonTerminalSymbols().addAll(eRhs.getSymbols());
 
 			// update syntactic LHS symbol counts
-			getSynLHSSymbolCounts().increment(r.getLHS());
+			getSynLHSSymbolCounts().increment(r.getLHS().toString());
 		}
 		
 		// update the start symbol(s)
@@ -166,5 +166,4 @@ public class Grammar {
 			addRule(theRules.get(i));
 		}
 	}
-
 }
