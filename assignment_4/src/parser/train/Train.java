@@ -142,7 +142,9 @@ public class Train {
 	public void binarizeTreeBank(Treebank treebank, int hOrder) {
 		Queue<Node> sistersQueue;
 		if (hOrder == -1) {
-			sistersQueue = new LinkedList<Node>();
+//			sistersQueue = new LinkedList<Node>(); //TODO - original code. changed for debug
+			treebank.getAnalyses().forEach(tree -> naiveBinarization(tree.getRoot()));
+			return;
 		} else if (hOrder == 0){
 			treebank.getAnalyses().forEach(tree -> zeroMemoryBinarize(tree.getRoot(),"@"+tree.getRoot().getIdentifier()+"//"));
 			return;
@@ -229,6 +231,46 @@ public class Train {
 			// binarize grandchildren recursively
 			zeroMemoryBinarize(rightChild,fictiveSymbol);
 			zeroMemoryBinarize(leftChild, fictiveSymbol); //maybe needless? always binary?
+		}
+	}
+
+	// naive binarization approach - depicted in Q2.2
+	private void naiveBinarization(Node currentNode){
+		// stop condition - reaching leaves
+		if (currentNode.isLeaf()){
+			return;
+		}
+		List<Node> daughters = currentNode.getDaughters();
+		Node leftChild = daughters.get(0);
+		Node rightChild;
+		int numOfDaughters = daughters.size();
+		// handle single child
+		if (numOfDaughters == 1){
+			naiveBinarization(leftChild);
+		}
+		// handle 2 children recursively
+		else if (numOfDaughters == 2){
+			rightChild = daughters.get(1);
+			naiveBinarization(leftChild);
+			naiveBinarization(rightChild);
+		}
+		// if more than 2 children - replace right child with fictive node representing all other children
+		else{
+			rightChild = new Node();
+			StringBuilder sb = new StringBuilder("@/");
+			for (int i=1 ; i < daughters.size() ; i++){
+				// add all the daughters' names -except the elder - to the fictive node
+				sb.append(daughters.get(i)).append("/");
+				// remove the little daughters from current node and set as the new node's children
+				rightChild.addDaughter(currentNode.getDaughters().remove(i));
+			}
+			// annotate the fictive node
+			rightChild.setIdentifier(sb.toString());
+			// add fictive node as right child to the parent
+			currentNode.addDaughter(rightChild);
+			// binarize the new node and it's older sister
+			naiveBinarization(rightChild);
+			naiveBinarization(leftChild);
 		}
 	}
 
