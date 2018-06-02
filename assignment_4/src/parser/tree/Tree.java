@@ -75,18 +75,4 @@ public class Tree {
 		m_nodeRoot = n;
 	}
 
-	// TODO - OURSS !!!!
-	public void binarize() {
-		this.m_nodeRoot.binarize();
-	}
-
-	public void markovize_horizontally(int order) {
-        if (order >= 0) {
-            this.m_nodeRoot.markovize_horizontally(order);
-        }
-	}
-
-	public void markovize(int hOrder) {
-		this.m_nodeRoot.markovize(hOrder);
-	}
 }

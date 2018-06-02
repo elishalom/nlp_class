@@ -142,7 +142,7 @@ public class Train {
 	public void binarizeTreeBank(Treebank treebank, int hOrder) {
 		Queue<Node> sistersQueue;
 		if (hOrder == -1) {
-//			sistersQueue = new LinkedList<Node>(); //TODO - original code. changed for debug
+//			sistersQueue = new LinkedList<Node>(); //TODO - original implementation. changed for debug
 			treebank.getAnalyses().forEach(tree -> naiveBinarization(tree.getRoot()));
 			return;
 		} else if (hOrder == 0){

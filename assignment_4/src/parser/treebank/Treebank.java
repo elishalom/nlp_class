@@ -48,22 +48,4 @@ public class Treebank {
 		
 		return sb.toString();
 	}
-
-    public void binarize() {
-        for (Tree tree : m_lstAnalyses) {
-            tree.binarize();
-        }
-    }
-
-	public void markovize_horizontally(int order) {
-		for (Tree tree : m_lstAnalyses) {
-			tree.markovize_horizontally(order);
-		}
-	}
-
-	public void markovize(int hOrder) {
-		for (Tree tree : m_lstAnalyses){
-			tree.markovize(hOrder);
-		}
-	}
 }

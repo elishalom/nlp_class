@@ -37,7 +37,7 @@ public class Decode {
 			m_mapLexicalRules = g.getLexicalEntries();
 
 			//add start-symbols
-			m_setStartSymbols = g.getStartSymbols(); //TODO - check if setStartSymbols is called in train
+			m_setStartSymbols = g.getStartSymbols();
 
 			// add non-terminal index table
 			m_ntIndices = new HashMap<>();
@@ -101,7 +101,7 @@ public class Decode {
 		return t;
 	}
 
-	// TODO - document - build tree from back pointers
+	// building parse tree using the back pointer chart
 	private Tree buildTree(ArrayList<ArrayList<HashMap<String,BackPointer>>> bpChart, String bpSymbol) {
 		// create a root node
 		Node root = new Node("TOP");
@@ -122,7 +122,7 @@ public class Decode {
 		return t;
 	}
 
-	// TODO - document - recuresivley add children to nodes by the backpointer chart
+	// recuresivley add children to nodes by the backpointer chart
 	private void traceBack(Node parent, BackPointer currentBP, ArrayList<ArrayList<HashMap<String,BackPointer>>> bpChart){
 
 		// if no children - it's a leaf
@@ -168,7 +168,7 @@ public class Decode {
 		}
 	}
 
-	//TODO - document - iterate over stat symbol candidates and returns the relevant symbol in the prob table that hold minimal value
+	//iterate over start symbol candidates and returns the relevant symbol in the prob table that hold minimal value
 	private String getMinimumBackPointerIndex(Set<String> candidates, ArrayList<ArrayList<HashMap<String,Double>>> probChart) {
 		double best = Double.POSITIVE_INFINITY;
 		String minSymbol = null;
@@ -201,7 +201,6 @@ public class Decode {
 		return  pyramidTable;
 	}
 
-	// TODO - documentation
 	// build probability backpointers charts for CKY
 	private void buildCYKCharts(ArrayList<ArrayList<HashMap<String, Double>>> probChart, ArrayList<ArrayList<HashMap<String,BackPointer>>> bpChart, List<String> input) {
 		// handle Terminal rules to initialize 1st row (lexical preprocess)
@@ -211,7 +210,7 @@ public class Decode {
 		return;
 	}
 
-	// TODO - documentation - parsing terminals and building the CYK Charts
+	// parsing terminals and building the CYK Charts
 	private void parseTerminals(ArrayList<ArrayList<HashMap<String,Double>>> probChart, ArrayList<ArrayList<HashMap<String,BackPointer>>> bpChart, List<String> input) {
 		int numOfWordsInInput = input.size();
 		int lastRowIndex = numOfWordsInInput - 1 ;
@@ -271,8 +270,7 @@ public class Decode {
 		}// end iterating over input
 	}
 
-	// TODO - documentation - filling the charts according to CYK algorithm
-	// TODO iterated over possible symbol values in charts instead of iterating over all rules ... unlike lexparse ... see if there is timing differences
+	// filling the charts according to CYK algorithm (for syntactic rules)
 	private void parseSynRules(ArrayList<ArrayList<HashMap<String,Double>>> probChart, ArrayList<ArrayList<HashMap<String,BackPointer>>> bpChart) {
 		int numOfRows = probChart.size();
 		// iterate over the table starting with row (size+1-span) 2 until reaching the top
@@ -445,7 +443,6 @@ public class Decode {
 	}
 
 
-	// TODO - doument
 	// this method splits Set of Rules ruleset to binary and unary rules
 	private static void splitRules(Set<Rule> rules,
 										Set<Rule> unaryRules,
@@ -458,8 +455,7 @@ public class Decode {
 		}
 	}
 
-	// TODO - document - method gives a RHS indexed version of given grammar
-	// notice - can check wheter a rule is unary or binary by the length of the rhs (split by " ")
+	// method gives a RHS indexed version of given grammar
 	private static HashMap<String,HashMap<String,Double>> indexGrammarByRHS(Set<Rule> rules) {
 		HashMap<String,HashMap<String,Double>> rhsIndexedGrammar = new HashMap<>();
 

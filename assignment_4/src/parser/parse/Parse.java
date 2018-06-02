@@ -41,18 +41,18 @@ public class Parse {
 		
 		if (args.length < 3)
 		{
-			System.out.println("Usage: Parse <goldset> <trainset> <experiment-identifier-string> [h-order]");
+			System.out.println("Usage: Parse <goldset> <trainset> <experiment-identifier-string> [h-order] [smoothing y/n]");
 			return;
 		}
 
 		// 1. read input
- 		System.out.println(java.time.LocalTime.now() + "reading input"); // TODO - for debug
+ 		System.out.println(java.time.LocalTime.now() + "reading input");
 
 		Treebank myGoldTreebank = TreebankReader.getInstance().read(true, args[0]);
 		Treebank myTrainTreebank = TreebankReader.getInstance().read(true, args[1]);
 
 		// 2. transform trees
-		System.out.println(java.time.LocalTime.now() + "\tbinarizing input trees"); // TODO - for debug
+		System.out.println(java.time.LocalTime.now() + "\tbinarizing input trees");
 
 		// markovization order default to remember all siblings
 		int hOrder = -1;
@@ -62,7 +62,7 @@ public class Parse {
 		Train.getInstance().binarizeTreeBank(myTrainTreebank,hOrder);
 
 		// 3. train
-		System.out.println(java.time.LocalTime.now() + "\ttraining model"); // TODO - for debug
+		System.out.println(java.time.LocalTime.now() + "\ttraining model");
 
 		boolean smoothing = false;
 		if ((args.length) > 4 && (args[4].charAt(0) == 'y')){
@@ -71,7 +71,7 @@ public class Parse {
 		Grammar myGrammar = Train.getInstance().train(myTrainTreebank, smoothing);
 		
 		// 4. decode
-		System.out.println(java.time.LocalTime.now() + "\tdecoding test set"); // TODO - for debug
+		System.out.println(java.time.LocalTime.now() + "\tdecoding test set");
 
 		List<Tree> myParseTrees = new ArrayList<Tree>();		
 		for (int i = 0; i < myGoldTreebank.size(); i++) {
@@ -79,15 +79,15 @@ public class Parse {
 			Tree myParseTree = Decode.getInstance(myGrammar).decode(mySentence);
 			myParseTrees.add(myParseTree);
 
-			System.out.println(java.time.LocalTime.now() + "\t decoded tree " + (i+1) + "/" + myGoldTreebank.size() + " len:" + mySentence.size()); // TODO for debug
+			System.out.println(java.time.LocalTime.now() + "\t decoded tree " + (i+1) + "/" + myGoldTreebank.size() + " len:" + mySentence.size());
 		}
 		
 		// 5. de-transform trees
-		Train.getInstance().debinarizeTreeList(myParseTrees); //TODO - maybe move to another class?
+		Train.getInstance().debinarizeTreeList(myParseTrees);
 
 		// 6. write output
 		writeOutput(args[2], myGrammar, myParseTrees);
-		System.out.println(java.time.LocalTime.now() + "\tDONE! wrote files to " + args[2]); // TODO - for debug
+		System.out.println(java.time.LocalTime.now() + "\tDONE! wrote files to " + args[2]);
 	}
 	
 	
